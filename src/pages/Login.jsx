@@ -1,0 +1,4 @@
+import { Link } from "react-router-dom";
+import PublicLayout from "../layouts/PublicLayout";
+function Login() { return <PublicLayout><section className="auth-page"><div className="auth-card"><p className="eyebrow">WELCOME BACK</p><h1>Log in to Appointer</h1><p className="muted">Continue your healthcare journey.</p><form onSubmit={event => event.preventDefault()}><label>Email address<input type="email" placeholder="you@example.com" /></label><label>Password<input type="password" placeholder="Enter your password" /></label><div className="form-row"><label className="check-label"><input type="checkbox" /> Remember me</label><button type="button" className="text-button">Forgot password?</button></div><button className="primary-button" type="submit">Log in</button></form><p className="auth-switch">New to Appointer? <Link to="/register">Create an account</Link></p></div></section></PublicLayout>; }
+export default Login;

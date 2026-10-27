@@ -1,0 +1,4 @@
+import { Link } from "react-router-dom";
+import PublicLayout from "../layouts/PublicLayout";
+function Register() { return <PublicLayout><section className="auth-page"><div className="auth-card"><p className="eyebrow">START YOUR JOURNEY</p><h1>Create your account</h1><p className="muted">Keep appointments and care details organized in one place.</p><form onSubmit={event => event.preventDefault()}><label>Full name<input placeholder="Your name" /></label><label>Email address<input type="email" placeholder="you@example.com" /></label><label>Password<input type="password" placeholder="At least 8 characters" /></label><label className="check-label"><input type="checkbox" /> I agree to the terms of use</label><button className="primary-button" type="submit">Create account</button></form><p className="auth-switch">Already have an account? <Link to="/login">Log in</Link></p></div></section></PublicLayout>; }
+export default Register;

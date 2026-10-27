@@ -1,0 +1,40 @@
+
+/* Global reset and theme */
+:root {
+  font-family: Inter, Arial, sans-serif;
+  color: #172b4d;
+  background: #f7f9fc;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  background: #f7f9fc;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  color: #172b4d;
+  background: #f7f9fc;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+h1, h2, h3, p {
+  color: inherit;
+}
+
+a {
+  text-decoration: none;
+}
