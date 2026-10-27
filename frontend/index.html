@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="description" content="Find trusted doctors, compare clinics and book appointments with Appointer.">
+    <title>Appointer — Find trusted doctors near you</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="site-header">
+        <nav class="nav-shell" aria-label="Main navigation">
+            <a class="brand" href="#" aria-label="Appointer home">
+                <img src="public/logo/logo.png" alt="Appointer">
+            </a>
+            <div class="nav-links">
+                <a class="active" href="#doctors">Find doctors</a>
+                <a href="#care">Video consult</a>
+                <a href="#care">Health articles</a>
+            </div>
+            <div class="nav-actions">
+                <a class="provider-link" href="#for-providers">For providers</a>
+                <button class="login-button" id="loginButton" type="button">Log in</button>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero" aria-labelledby="hero-title">
+            <div class="hero-inner">
+                <div class="hero-copy">
+                    <p class="eyebrow"><span class="eyebrow-mark">✳</span> CARE THAT WORKS AROUND YOU</p>
+                    <h1 id="hero-title">Your health,<br>in <span>good hands.</span></h1>
+                    <p class="hero-description">Find the right doctor and book an appointment, all in one place.</p>
+
+                    <form class="search-panel" id="searchForm">
+                        <label class="search-field location-field">
+                            <span class="field-icon" aria-hidden="true">⌖</span>
+                            <span class="field-content">
+                                <span class="field-label">Location</span>
+                                <input id="locationInput" name="location" type="text" value="Bengaluru" autocomplete="address-level2" aria-label="City or location">
+                            </span>
+                        </label>
+                        <span class="field-divider" aria-hidden="true"></span>
+                        <label class="search-field specialty-field">
+                            <span class="field-icon search-icon" aria-hidden="true">⌕</span>
+                            <span class="field-content">
+                                <span class="field-label">Find a doctor</span>
+                                <input id="specialtyInput" name="specialty" type="search" placeholder="Speciality, doctor or clinic" autocomplete="off">
+                            </span>
+                        </label>
+                        <button class="search-button" type="submit"><span aria-hidden="true">⌕</span> Search</button>
+                    </form>
+                    <div class="popular-searches">
+                        <span>Popular:</span>
+                        <button type="button" data-search="Dentist">Dentist</button>
+                        <button type="button" data-search="Dermatologist">Dermatologist</button>
+                        <button type="button" data-search="General physician">General physician</button>
+                    </div>
+                </div>
+                <div class="hero-visual" aria-hidden="true">
+                    <div class="visual-orbit orbit-one"></div>
+                    <div class="visual-orbit orbit-two"></div>
+                    <div class="hero-blob"></div>
+                    <div class="hero-doctor">
+                        <div class="doctor-hair"></div>
+                        <div class="doctor-face"><span class="face-eye eye-left"></span><span class="face-eye eye-right"></span><span class="face-smile"></span></div>
+                        <div class="doctor-neck"></div>
+                        <div class="doctor-coat"><span class="coat-shirt"></span><span class="coat-pocket"></span></div>
+                        <div class="doctor-stethoscope"></div>
+                    </div>
+                    <div class="floating-note note-rating"><span class="rating-star">★</span><span><strong>4.9/5</strong><small>Patient rating</small></span></div>
+                    <div class="floating-note note-appointment"><span class="appointment-icon">✓</span><span><strong>Care, made easy</strong><small>Appointments that fit your day</small></span></div>
+                    <span class="sparkle sparkle-one">✦</span>
+                    <span class="sparkle sparkle-two">✳</span>
+                </div>
+            </div>
+            <div class="hero-proof">
+                <div class="proof-item"><span class="proof-icon">♧</span><span>Verified doctors</span></div>
+                <span class="proof-divider"></span>
+                <div class="proof-item"><span class="proof-icon">◷</span><span>Easy appointment booking</span></div>
+                <span class="proof-divider"></span>
+                <div class="proof-item"><span class="proof-icon">♡</span><span>Care you can count on</span></div>
+            </div>
+        </section>
+
+        <section class="specialties section-shell" id="care" aria-labelledby="specialties-title">
+            <div class="section-heading">
+                <div>
+                    <p class="section-kicker">HERE FOR EVERY YOU</p>
+                    <h2 id="specialties-title">What are you looking for?</h2>
+                </div>
+                <a class="text-link" href="#doctors">Explore all doctors <span aria-hidden="true">→</span></a>
+            </div>
+            <div class="specialty-grid">
+                <button class="specialty-tile tile-blue" type="button" data-search="General physician"><span class="specialty-icon">🩺</span><span class="specialty-name">General physician</span><span class="specialty-caption">Everyday care</span></button>
+                <button class="specialty-tile tile-peach" type="button" data-search="Dentist"><span class="specialty-icon">🦷</span><span class="specialty-name">Dentist</span><span class="specialty-caption">Teeth & gums</span></button>
+                <button class="specialty-tile tile-lilac" type="button" data-search="Dermatologist"><span class="specialty-icon">🧴</span><span class="specialty-name">Dermatologist</span><span class="specialty-caption">Skin & hair</span></button>
+                <button class="specialty-tile tile-green" type="button" data-search="Cardiologist"><span class="specialty-icon">♡</span><span class="specialty-name">Cardiologist</span><span class="specialty-caption">Heart health</span></button>
+                <button class="specialty-tile tile-yellow" type="button" data-search="Eye specialist"><span class="specialty-icon">👁️</span><span class="specialty-name">Eye specialist</span><span class="specialty-caption">Vision & eyes</span></button>
+                <button class="specialty-tile tile-pink" type="button" data-search="Gynecologist"><span class="specialty-icon">🌸</span><span class="specialty-name">Gynecologist</span><span class="specialty-caption">Women's health</span></button>
+            </div>
+        </section>
+
+        <section class="doctor-section" id="doctors" aria-labelledby="doctors-title">
+            <div class="section-shell">
+                <div class="section-heading doctors-heading">
+                    <div>
+                        <p class="section-kicker">PERSONALIZED FOR YOU</p>
+                        <h2 id="doctors-title">Doctors you can count on</h2>
+                        <p class="results-location" id="resultsLocation">Top-rated doctors in Bengaluru</p>
+                        <p class="demo-disclaimer" role="note">Demo listings: doctor details, ratings, and availability are sample data.</p>
+                    </div>
+                    <a class="text-link" href="#searchForm">Refine your search <span aria-hidden="true">↗</span></a>
+                </div>
+                <div class="filter-row" aria-label="Filter doctors">
+                    <button class="filter-chip active" type="button" data-filter="all">All doctors</button>
+                    <button class="filter-chip" type="button" data-filter="available">Available today</button>
+                    <button class="filter-chip" type="button" data-filter="rating">Top rated</button>
+                </div>
+                <div class="doctor-grid" id="doctorResults" aria-live="polite"></div>
+                <div class="empty-state" id="emptyState" hidden>
+                    <span class="empty-icon">⌕</span>
+                    <h3>No doctors found</h3>
+                    <p>Try another specialty or search term.</p>
+                    <button class="outline-button" id="clearSearch" type="button">Show all doctors</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="care-banner section-shell" id="for-providers">
+            <div class="care-banner-copy">
+                <p class="section-kicker">CARE, ON YOUR TERMS</p>
+                <h2>Good care starts<br>with a good connection.</h2>
+                <p>From finding a specialist to choosing a time that works, your next step is simple.</p>
+                <a class="banner-button" href="#doctors">Find your doctor <span aria-hidden="true">→</span></a>
+            </div>
+            <div class="care-banner-art" aria-hidden="true">
+                <div class="banner-circle circle-back"></div>
+                <div class="banner-circle circle-front">♡</div>
+                <div class="banner-cross">+</div>
+                <div class="banner-spark">✦</div>
+            </div>
+        </section>
+    </main>
+
+    <section class="team-section" aria-labelledby="team-title">
+        <div class="team-shell">
+            <div class="team-heading">
+                <p class="team-kicker">THE TEAM</p>
+                <h2 id="team-title">Meet Our Team</h2>
+                <p>Building Appointer together.</p>
+            </div>
+            <div class="team-grid">
+                <article class="team-card">
+                    <span class="team-monogram" aria-hidden="true">C</span>
+                    <h3>Chiranthan</h3>
+                    <p class="team-usn">USN: 1WA25CS061</p>
+                    <p class="team-role">Coming Soon</p>
+                </article>
+                <article class="team-card">
+                    <span class="team-monogram" aria-hidden="true">CUK</span>
+                    <h3>Chirag Uday Kawari</h3>
+                    <p class="team-usn">USN: 1WA25CS060</p>
+                    <p class="team-role">Coming Soon</p>
+                </article>
+                <article class="team-card">
+                    <span class="team-monogram" aria-hidden="true">CL</span>
+                    <h3>Charuaka L</h3>
+                    <p class="team-usn">USN: 1WA25CS059</p>
+                    <p class="team-role">Coming Soon</p>
+                </article>
+                <article class="team-card">
+                    <span class="team-monogram" aria-hidden="true">JDS</span>
+                    <h3>Jay Deepakakumar Salunke</h3>
+                    <p class="team-usn">USN: 1WA25CS099</p>
+                    <p class="team-role">Coming Soon</p>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <span class="footer-brand-name">APPOINTER</span>
+            <p>Full Stack Web Development Project</p>
+            <span>© 2026 Appointer. All rights reserved.</span>
+        </div>
+    </footer>
+
+    <dialog class="booking-dialog" id="bookingDialog" aria-labelledby="bookingTitle">
+        <form id="bookingForm">
+            <button class="dialog-close" type="button" id="closeDialog" aria-label="Close">×</button>
+            <p class="section-kicker">YOUR NEXT STEP</p>
+            <h2 id="bookingTitle">Book an appointment</h2>
+            <p class="booking-doctor" id="bookingDoctor"></p>
+            <p class="demo-disclaimer" role="note">Demo only. This appointment request will not be sent or saved.</p>
+            <label class="dialog-label" for="appointmentDate">Choose a date</label>
+            <input class="dialog-input" id="appointmentDate" name="date" type="date" required>
+            <label class="dialog-label" for="appointmentTime">Choose a time</label>
+            <select class="dialog-input" id="appointmentTime" name="time" required>
+                <option value="">Select a time</option>
+                <option>09:30 AM</option>
+                <option>11:00 AM</option>
+                <option>02:30 PM</option>
+                <option>04:00 PM</option>
+            </select>
+            <button class="search-button dialog-submit" type="submit">Confirm appointment</button>
+        </form>
+    </dialog>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="script.js"></script>
+</body>
+</html>
