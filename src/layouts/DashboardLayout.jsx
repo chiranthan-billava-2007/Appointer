@@ -27,35 +27,34 @@ function DashboardLayout({ role, children }) {
   return (
     <div className="dashboard-layout">
       <aside className="dashboard-sidebar">
-        <Link to="/" className="dashboard-brand">✚ Appointer</Link>
+        <div className="sidebar-brand-wrapper">
+          <Link to="/" className="dashboard-brand">✚ Appointer</Link>
+          <span className="sidebar-badge">{role} portal</span>
+        </div>
         <p className="sidebar-label">{role} portal</p>
-        <nav>
+        <nav className="dashboard-nav-container">
           {links.map(([to, label]) => (
             <Link
-              className={location.pathname === to ? "active" : ""}
+              className={`dashboard-nav-link ${location.pathname === to ? "active" : ""}`}
               to={to}
               key={label}
             >
               {label}
             </Link>
           ))}
+          <Link to="/" className="sidebar-home-mobile">← Home</Link>
         </nav>
         <Link to="/" className="sidebar-home">← Back to home</Link>
       </aside>
       <section className="dashboard-content">
         <header className="dashboard-topbar">
-          <span>Welcome, {user?.name || "User"}</span>
+          <div className="dashboard-user-greeting">
+            <span>Welcome, <strong>{user?.name || "User"}</strong></span>
+          </div>
           <button
             type="button"
             onClick={logout}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#dc2626",
-              cursor: "pointer",
-              fontWeight: 500,
-              fontSize: "0.9rem",
-            }}
+            className="dashboard-signout-btn"
           >
             Sign out
           </button>

@@ -331,7 +331,7 @@ function AIAssistant() {
                           <div
                             style={{
                               display: "grid",
-                              gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+                              gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 240px), 1fr))",
                               gap: "12px",
                               marginTop: "14px",
                             }}
@@ -490,6 +490,7 @@ function AIAssistant() {
                         {/* Payload 6: REQUIRE EXPLICIT USER CONFIRMATION (Requirement 6) */}
                         {msg.payload?.actionRequired && msg.payload?.pendingAction && (
                           <div
+                            className="pending-action-card"
                             style={{
                               marginTop: "16px",
                               padding: "16px 20px",
@@ -537,7 +538,7 @@ function AIAssistant() {
                               ⚠️ In accordance with healthcare scheduling standards, your explicit confirmation is required before modifying your appointment.
                             </p>
 
-                            <div style={{ display: "flex", gap: "10px" }}>
+                            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                               <button
                                 type="button"
                                 className="primary-button"
@@ -694,7 +695,7 @@ function AIAssistant() {
           </form>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: "20px", alignItems: "center" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: "20px", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
           <Link to="/doctors" className="back-link" style={{ margin: 0 }}>
             Prefer to browse the directory directly? Explore Doctors →
           </Link>

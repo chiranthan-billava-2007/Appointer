@@ -74,7 +74,7 @@ function DoctorLogin() {
             Need doctor onboarding? Contact platform administration.
           </p>
 
-          <div style={{ marginTop: "24px", paddingTop: "16px", borderTop: "1px solid #e2e8f0", fontSize: "0.85rem", color: "#64748b", textAlign: "center", display: "flex", justifyContent: "center", gap: "16px" }}>
+          <div style={{ marginTop: "24px", paddingTop: "16px", borderTop: "1px solid #e2e8f0", fontSize: "0.85rem", color: "#64748b", textAlign: "center", display: "flex", justifyContent: "center", gap: "16px", flexWrap: "wrap" }}>
             <Link to="/login" style={{ color: "var(--primary, #0284c7)" }}>← Patient Portal</Link>
             <Link to="/admin/login" style={{ color: "var(--primary, #0284c7)" }}>Admin Portal →</Link>
           </div>
