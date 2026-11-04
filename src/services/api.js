@@ -67,6 +67,17 @@ export const api = {
     return data;
   },
 
+  aiDoctorFinder: async (query) => {
+    const res = await fetch(`${API_BASE}/doctors/ai-find`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Failed to find matching doctors");
+    return data;
+  },
+
   onboardDoctor: async (doctorData) => {
     const res = await fetch(`${API_BASE}/doctors`, {
       method: "POST",

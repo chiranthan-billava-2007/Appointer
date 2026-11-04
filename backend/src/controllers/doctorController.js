@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import Doctor from "../models/Doctor.js";
 import User from "../models/User.js";
+import { extractDoctorSearchCriteria, findMatchingDoctors } from "../services/aiService.js";
 
 // Demo/Directory fallback doctors (Directory preview only, direct platform booking not accepted)
 const DEFAULT_DOCTORS = [
@@ -238,5 +239,60 @@ export const createDoctor = async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+};
+
+/**
+ * AI Doctor Finder
+ * Public discovery endpoint: Converts natural-language patient queries into doctor search criteria,
+ * queries actual registered doctors from MongoDB, and returns matches without fabricating details.
+ */
+export const aiFindDoctors = async (req, res) => {
+  try {
+    const { query } = req.body;
+
+    if (!query || typeof query !== "string" || !query.trim()) {
+      return res.status(400).json({
+        message: "Please provide a description of the symptoms, specialty, or care you are looking for.",
+      });
+    }
+
+    if (query.trim().length > 500) {
+      return res.status(400).json({
+        message: "Query is too long. Please summarize your care search in 500 characters or less.",
+      });
+    }
+
+    // 1. Convert natural-language query into doctor search criteria (Gemini LLM with fallback)
+    const criteria = await extractDoctorSearchCriteria(query.trim());
+
+    // 2. Query actual registered doctors from MongoDB
+    const doctors = await findMatchingDoctors(criteria);
+
+    // 3. Construct response
+    res.json({
+      success: true,
+      query: query.trim(),
+      criteria: {
+        specialty: criteria.specialty || "",
+        keywords: criteria.keywords || [],
+        location: criteria.location || "",
+        reasoning: criteria.reasoning || "Matched to suitable healthcare providers.",
+        disclaimer:
+          criteria.disclaimer ||
+          "This tool is for doctor discovery and appointment matching only. It does not provide medical diagnoses or medical advice.",
+      },
+      totalMatches: doctors.length,
+      doctors,
+      message:
+        doctors.length > 0
+          ? `Found ${doctors.length} registered doctor${doctors.length === 1 ? "" : "s"} matching your care search.`
+          : "No registered doctors currently match your exact criteria. You can browse our directory or modify your query.",
+    });
+  } catch (error) {
+    console.error("[AI Doctor Finder Controller Error]", error.message);
+    res.status(error.status || 500).json({
+      message: error.status ? error.message : "An error occurred while finding matching doctors. Please try again.",
+    });
   }
 };

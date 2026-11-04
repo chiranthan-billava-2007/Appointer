@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import PublicLayout from "../layouts/PublicLayout";
 import { api } from "../services/api";
 
@@ -14,8 +14,12 @@ const specialtiesList = [
 ];
 
 function FindDoctors() {
-  const [query, setQuery] = useState("");
-  const [specialty, setSpecialty] = useState("All specialties");
+  const [searchParams] = useSearchParams();
+  const urlSpecialty = searchParams.get("specialty") || "All specialties";
+  const urlQuery = searchParams.get("search") || "";
+
+  const [query, setQuery] = useState(urlQuery);
+  const [specialty, setSpecialty] = useState(urlSpecialty);
   const [doctorsList, setDoctorsList] = useState([]);
   const [loading, setLoading] = useState(true);
 

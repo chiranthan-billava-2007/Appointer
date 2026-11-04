@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
 import Doctor from "./models/Doctor.js";
+import User from "./models/User.js";
 import { connectDB } from "./config/db.js";
 
 dotenv.config();
@@ -8,6 +10,7 @@ dotenv.config();
 const doctors = [
   {
     name: "Dr. Ananya Sharma",
+    email: "ananya.sharma@appointer.internal",
     specialty: "Dermatologist",
     experienceYears: 12,
     rating: 4.9,
@@ -20,6 +23,7 @@ const doctors = [
   },
   {
     name: "Dr. Rohan Mehta",
+    email: "rohan.mehta@appointer.internal",
     specialty: "Dentist",
     experienceYears: 8,
     rating: 4.8,
@@ -32,6 +36,7 @@ const doctors = [
   },
   {
     name: "Dr. Kavya Nair",
+    email: "kavya.nair@appointer.internal",
     specialty: "General physician",
     experienceYears: 10,
     rating: 4.9,
@@ -44,6 +49,7 @@ const doctors = [
   },
   {
     name: "Dr. Arjun Rao",
+    email: "arjun.rao@appointer.internal",
     specialty: "Cardiologist",
     experienceYears: 15,
     rating: 4.9,
@@ -56,6 +62,7 @@ const doctors = [
   },
   {
     name: "Dr. Meera Iyer",
+    email: "meera.iyer@appointer.internal",
     specialty: "Eye specialist",
     experienceYears: 9,
     rating: 4.7,
@@ -68,6 +75,7 @@ const doctors = [
   },
   {
     name: "Dr. Nisha Kapoor",
+    email: "nisha.kapoor@appointer.internal",
     specialty: "Gynecologist",
     experienceYears: 11,
     rating: 4.9,
@@ -83,12 +91,52 @@ const doctors = [
 const seedData = async () => {
   try {
     await connectDB();
-    await Doctor.deleteMany({});
-    await Doctor.insertMany(doctors);
-    console.log("Database seeded successfully with initial doctors!");
+    console.log("[Seed] Checking and safely provisioning registered doctors...");
+
+    const salt = await bcrypt.genSalt(10);
+    const defaultPassword = process.env.DOCTOR_SEED_PASSWORD || "DoctorSecure123!";
+    const hashedPassword = await bcrypt.hash(defaultPassword, salt);
+
+    for (const docData of doctors) {
+      const email = docData.email.toLowerCase();
+      let user = await User.findOne({ email });
+
+      if (!user) {
+        user = await User.create({
+          name: docData.name,
+          email,
+          password: hashedPassword,
+          role: "doctor",
+          phone: "9876543210",
+        });
+        console.log(`[Seed] Created doctor user: ${email}`);
+      }
+
+      let profile = await Doctor.findOne({ user: user._id });
+      if (!profile) {
+        profile = await Doctor.create({
+          user: user._id,
+          name: docData.name,
+          specialty: docData.specialty,
+          experienceYears: docData.experienceYears,
+          rating: docData.rating,
+          reviewsCount: docData.reviewsCount,
+          clinicName: docData.clinicName,
+          location: docData.location,
+          about: docData.about,
+          areasOfCare: docData.areasOfCare,
+          availableSlots: docData.availableSlots,
+        });
+        console.log(`[Seed] Created doctor profile for: ${docData.name}`);
+      } else {
+        console.log(`[Seed] Doctor profile already exists: ${docData.name}`);
+      }
+    }
+
+    console.log("[Seed] Database verified with registered doctors successfully.");
     process.exit(0);
   } catch (error) {
-    console.error("Error seeding database:", error);
+    console.error("[Seed Error]:", error);
     process.exit(1);
   }
 };
