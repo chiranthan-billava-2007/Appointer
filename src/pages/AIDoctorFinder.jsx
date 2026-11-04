@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import PublicLayout from "../layouts/PublicLayout";
 import { api } from "../services/api";
@@ -27,6 +27,7 @@ function AIDoctorFinder() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [searchResult, setSearchResult] = useState(null);
+  const resultsRef = useRef(null);
 
   const handleSelectOption = (option) => {
     if (selected === option) {
@@ -50,10 +51,14 @@ function AIDoctorFinder() {
 
     setLoading(true);
     setError("");
+    setSearchResult(null);
 
     try {
       const data = await api.aiDoctorFinder(queryToSearch);
       setSearchResult(data);
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
     } catch (err) {
       console.error("AI Doctor Finder request failed:", err);
       setError(err.message || "Failed to find matching doctors. Please try again.");
@@ -140,9 +145,33 @@ function AIDoctorFinder() {
         </div>
       </section>
 
-      {/* AI Search Results & Doctor Discovery */}
-      {searchResult && (
+      {/* Loading State */}
+      {loading && (
+        <section className="listing-section" style={{ borderTop: "1px solid #e1eeee", textAlign: "center" }}>
+          <div className="content-panel" style={{ maxWidth: "600px", margin: "0 auto", padding: "35px 20px" }}>
+            <p className="eyebrow">AI CARE SEARCH</p>
+            <h3 style={{ color: "#17394d", margin: "10px 0" }}>Analyzing symptoms & finding registered doctors...</h3>
+            <p className="muted">Matching your query with verified specialists in our directory.</p>
+          </div>
+        </section>
+      )}
+
+      {/* Error State */}
+      {error && !loading && (
         <section className="listing-section" style={{ borderTop: "1px solid #e1eeee" }}>
+          <div className="empty-state">
+            <h3 style={{ color: "#d9534f" }}>Search could not be completed</h3>
+            <p>{error}</p>
+            <button type="button" className="outline-button" onClick={() => setError("")}>
+              Dismiss
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* AI Search Results & Doctor Discovery */}
+      {searchResult && !loading && (
+        <section ref={resultsRef} className="listing-section" style={{ borderTop: "1px solid #e1eeee" }}>
           <div className="listing-heading">
             <div>
               <p className="eyebrow">AI CARE MATCHING INSIGHT</p>

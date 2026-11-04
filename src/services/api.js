@@ -1,8 +1,23 @@
 const getApiBaseUrl = () => {
   const rawUrl = import.meta.env.VITE_API_URL;
-  if (!rawUrl) return "http://localhost:5000/api";
-  const trimmed = rawUrl.trim().replace(/\/+$/, "");
-  return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
+  if (rawUrl && typeof rawUrl === "string" && rawUrl.trim()) {
+    const trimmed = rawUrl.trim().replace(/\/+$/, "");
+    return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
+  }
+
+  // Automatic production fallback for Vercel deployment:
+  // When running in production mode (or when accessed from any non-localhost domain),
+  // default to the production Render backend API.
+  if (
+    import.meta.env.PROD ||
+    (typeof window !== "undefined" &&
+      window.location.hostname !== "localhost" &&
+      window.location.hostname !== "127.0.0.1")
+  ) {
+    return "https://appointer-ttzm.onrender.com/api";
+  }
+
+  return "http://localhost:5000/api";
 };
 
 const API_BASE = getApiBaseUrl();
@@ -73,8 +88,13 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ query }),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Failed to find matching doctors");
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error(`Server returned status ${res.status}. Please try again later.`);
+    }
+    if (!res.ok) throw new Error(data?.message || "Failed to find matching doctors");
     return data;
   },
 
