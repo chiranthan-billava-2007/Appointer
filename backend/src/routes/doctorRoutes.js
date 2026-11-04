@@ -5,6 +5,7 @@ import {
   getDoctorById,
   createDoctor,
   aiFindDoctors,
+  getDoctorAvailability,
 } from "../controllers/doctorController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { authorize } from "../middleware/rbacMiddleware.js";
@@ -30,8 +31,9 @@ router.get("/ai-find", aiLimiter, (req, res) => {
   return aiFindDoctors(req, res);
 });
 
-// Public doctor discovery
+// Public doctor discovery and real-time availability
 router.get("/", getDoctors);
+router.get("/:id/availability", getDoctorAvailability);
 router.get("/:id", getDoctorById);
 
 // Canonical Doctor Onboarding: Admin only

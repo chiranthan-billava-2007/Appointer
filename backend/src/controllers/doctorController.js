@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import Doctor from "../models/Doctor.js";
 import User from "../models/User.js";
+import Appointment from "../models/Appointment.js";
 import { extractDoctorSearchCriteria, findMatchingDoctors } from "../services/aiService.js";
 
 // Demo/Directory fallback doctors (Directory preview only, direct platform booking not accepted)
@@ -294,5 +295,50 @@ export const aiFindDoctors = async (req, res) => {
     res.status(error.status || 500).json({
       message: error.status ? error.message : "An error occurred while finding matching doctors. Please try again.",
     });
+  }
+};
+
+/**
+ * Real-time doctor availability check:
+ * Compares doctor's configured availableSlots against existing upcoming appointments
+ * in MongoDB to calculate accurate, unbooked slots. Never fabricates slots.
+ */
+export const getDoctorAvailability = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id || !mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid doctor ID" });
+    }
+
+    const doctor = await Doctor.findById(id);
+    if (!doctor) {
+      return res.status(404).json({ message: "Doctor not found" });
+    }
+
+    // Query active upcoming appointments for this doctor from MongoDB
+    const upcomingAppointments = await Appointment.find({
+      doctor: doctor._id,
+      status: "upcoming",
+    }).select("slot");
+
+    const normalize = (s) => (s || "").trim().replace(/\s+/g, " ").toLowerCase();
+    const bookedSet = new Set(upcomingAppointments.map((a) => normalize(a.slot)));
+
+    const allSlots = doctor.availableSlots || [];
+    const availableSlots = allSlots.filter((s) => !bookedSet.has(normalize(s)));
+    const bookedSlots = allSlots.filter((s) => bookedSet.has(normalize(s)));
+
+    res.json({
+      doctorId: doctor._id,
+      doctorName: doctor.name,
+      specialty: doctor.specialty,
+      clinicName: doctor.clinicName,
+      location: doctor.location,
+      allSlots,
+      availableSlots,
+      bookedSlots,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };

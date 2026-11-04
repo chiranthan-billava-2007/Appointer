@@ -150,4 +150,39 @@ export const api = {
     if (!res.ok) throw new Error(data.message || "Failed to cancel appointment");
     return data;
   },
+
+  rescheduleAppointment: async (id, slot) => {
+    const res = await fetch(`${API_BASE}/appointments/${id}/reschedule`, {
+      method: "PATCH",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ slot }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Failed to reschedule appointment");
+    return data;
+  },
+
+  getDoctorAvailability: async (doctorId) => {
+    const res = await fetch(`${API_BASE}/doctors/${doctorId}/availability`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Failed to fetch doctor availability");
+    return data;
+  },
+
+  // AI Appointment Assistant
+  assistantChat: async (message, history = []) => {
+    const res = await fetch(`${API_BASE}/assistant/chat`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ message, history }),
+    });
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error(`Server returned status ${res.status}. Please try again later.`);
+    }
+    if (!res.ok) throw new Error(data?.message || "Assistant request failed");
+    return data;
+  },
 };

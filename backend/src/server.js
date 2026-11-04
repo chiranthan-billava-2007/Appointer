@@ -9,6 +9,7 @@ import { connectDB } from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import doctorRoutes from "./routes/doctorRoutes.js";
 import appointmentRoutes from "./routes/appointmentRoutes.js";
+import assistantRoutes from "./routes/assistantRoutes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
@@ -83,6 +84,7 @@ app.use(express.json({ limit: "10kb" }));
 app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/doctors", doctorRoutes);
 app.use("/api/appointments", appointmentRoutes);
+app.use("/api/assistant", assistantRoutes);
 
 // Root welcome endpoint
 app.get("/", (req, res) => {

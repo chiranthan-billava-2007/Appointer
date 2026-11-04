@@ -44,3 +44,37 @@ export const protect = async (req, res, next) => {
 
   return res.status(401).json({ message: "Not authorized, no token provided" });
 };
+
+// Optional authentication middleware: Populates req.user if valid JWT is present,
+// but allows unauthenticated access to continue (req.user remains undefined)
+export const optionalAuth = async (req, res, next) => {
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret || jwtSecret.length < 32 || jwtSecret.includes("change_in_production")) {
+    return next();
+  }
+
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer")
+  ) {
+    try {
+      const token = req.headers.authorization.split(" ")[1];
+      if (token) {
+        const decoded = jwt.verify(token, jwtSecret);
+        const user = await User.findById(decoded.id).select("-password");
+        if (user) {
+          req.user = {
+            id: user._id.toString(),
+            role: user.role,
+            email: user.email,
+            name: user.name,
+          };
+        }
+      }
+    } catch {
+      // Ignore token failure for optional auth
+    }
+  }
+
+  next();
+};
