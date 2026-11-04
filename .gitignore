@@ -22,3 +22,13 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Backend environment and database backups
+backend/.env
+backend/backups/
+
+# Environment files
+.env
+.env.*
+!.env.example
+!backend/.env.example
