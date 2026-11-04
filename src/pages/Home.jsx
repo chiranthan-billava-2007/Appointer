@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { Link } from "react-router-dom";
 import doctorHero from "../assets/doctor-hero.png";
+import logoMark from "../assets/logo-mark.png";
 import Navbar from "../components/Navbar";
 import "../App.css";
 
@@ -249,7 +250,10 @@ function Home() {
           </div>
         </section>
         <div className="footer-bottom">
-          <span>APPOINTER</span>
+          <span className="footer-brand-dark">
+            <img src={logoMark} alt="Appointer logo" className="footer-logo-img-dark" />
+            <span>APPOINTER</span>
+          </span>
           <span>Full Stack Web Development Project</span>
           <span>© 2026 Appointer. All rights reserved.</span>
         </div>

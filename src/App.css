@@ -103,39 +103,43 @@ svg {
 .appointer-navbar .logo {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 10px;
+  gap: 10px;
+  padding: 6px 14px 6px 8px;
+  border-radius: 12px;
   background: #d5ebee;
   color: #12627c;
   text-decoration: none;
   white-space: nowrap;
-  transition: transform 180ms ease;
+  transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
 .logo:hover {
   transform: scale(1.02);
+  box-shadow: 0 4px 14px rgba(22, 131, 160, 0.15);
 }
 
 .logo-mark {
   position: relative;
   display: grid;
   place-items: center;
-  width: 44px;
+  width: 38px;
   height: 38px;
+  aspect-ratio: 1 / 1;
   overflow: hidden;
   flex: 0 0 auto;
 }
 
 .logo-mark .app-logo {
   position: static;
-  width: 44px;
-  height: 36px;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1 / 1;
   max-width: 100%;
   object-fit: contain;
   padding: 0;
   background: transparent;
   border-radius: 0;
+  filter: drop-shadow(0 2px 6px rgba(18, 98, 124, 0.15));
 }
 
 .logo span,
@@ -1098,9 +1102,47 @@ svg {
 }
 
 .footer-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   color: #1683a0;
   font-size: 20px;
   font-weight: 800;
+  text-decoration: none;
+}
+
+.footer-logo-mark {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
+}
+
+.footer-logo-img {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+}
+
+.footer-brand-dark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffffff;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.footer-logo-img-dark {
+  width: 20px;
+  height: 20px;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  filter: drop-shadow(0 0 6px rgba(0, 180, 255, 0.45));
 }
 
 /* ---------- Inner Pages Layout ---------- */
@@ -1589,9 +1631,35 @@ svg {
 }
 
 .dashboard-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   color: #ffffff;
   font-size: 20px;
   font-weight: 800;
+  text-decoration: none;
+  transition: transform 180ms ease;
+}
+
+.dashboard-brand:hover {
+  transform: scale(1.02);
+}
+
+.dashboard-logo-mark {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
+}
+
+.dashboard-logo-img {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px rgba(0, 180, 255, 0.45));
 }
 
 .sidebar-badge {
@@ -2338,13 +2406,15 @@ svg {
   }
 
   .logo-mark {
-    width: 38px;
+    width: 32px;
     height: 32px;
+    aspect-ratio: 1 / 1;
   }
 
   .logo-mark .app-logo {
-    width: 38px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
+    aspect-ratio: 1 / 1;
   }
 
   .specialty-grid {

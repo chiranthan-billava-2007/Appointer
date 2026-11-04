@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import logoMark from "../assets/logo-mark.png";
 import { useAuth } from "../context/useAuth";
 
 function DashboardLayout({ role, children }) {
@@ -28,7 +29,12 @@ function DashboardLayout({ role, children }) {
     <div className="dashboard-layout">
       <aside className="dashboard-sidebar">
         <div className="sidebar-brand-wrapper">
-          <Link to="/" className="dashboard-brand">✚ Appointer</Link>
+          <Link to="/" className="dashboard-brand" aria-label="Appointer home">
+            <span className="dashboard-logo-mark">
+              <img src={logoMark} alt="Appointer logo" className="dashboard-logo-img" />
+            </span>
+            <span>Appointer</span>
+          </Link>
           <span className="sidebar-badge">{role} portal</span>
         </div>
         <p className="sidebar-label">{role} portal</p>

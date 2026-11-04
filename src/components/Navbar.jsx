@@ -30,7 +30,7 @@ function Navbar() {
       <div className="navbar-header-row">
         <Link to="/" className="logo" aria-label="Appointer home" onClick={() => setMenuOpen(false)}>
           <span className="logo-mark">
-            <img src={logoMark} alt="Appointer symbol" className="app-logo" />
+            <img src={logoMark} alt="Appointer logo" className="app-logo" />
           </span>
           <span>Appointer</span>
         </Link>
