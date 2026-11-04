@@ -5,16 +5,16 @@ const getApiBaseUrl = () => {
     return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
   }
 
-  // Automatic production fallback for Vercel deployment:
-  // When running in production mode (or when accessed from any non-localhost domain),
-  // default to the production Render backend API.
+  // In production / deployed environments, default to relative /api
+  // which is proxied by Vercel's edge rewrites (vercel.json) or Vite dev server proxy (vite.config.js).
+  // This completely eliminates cross-origin preflight requests and CORS blocking.
   if (
     import.meta.env.PROD ||
     (typeof window !== "undefined" &&
       window.location.hostname !== "localhost" &&
       window.location.hostname !== "127.0.0.1")
   ) {
-    return "https://appointer-ttzm.onrender.com/api";
+    return "/api";
   }
 
   return "http://localhost:5000/api";

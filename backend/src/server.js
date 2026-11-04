@@ -46,11 +46,17 @@ const authLimiter = rateLimit({
   message: { message: "Too many authentication attempts. Please try again after 15 minutes." },
 });
 
-// Middleware: CORS supporting comma-separated origins and trailing-slash normalization
-const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
+// Middleware: CORS supporting explicitly configured origins (default + CLIENT_URL) with trailing-slash normalization
+const defaultAllowed = [
+  "http://localhost:5173",
+  "https://appointer.vercel.app",
+];
+const envAllowed = (process.env.CLIENT_URL || "")
   .split(",")
   .map((origin) => origin.trim().replace(/\/+$/, ""))
   .filter(Boolean);
+
+const allowedOrigins = Array.from(new Set([...defaultAllowed, ...envAllowed]));
 
 app.use(
   cors({
@@ -59,12 +65,14 @@ app.use(
       if (!origin) {
         return callback(null, true);
       }
-      // Allow only origins explicitly listed in CLIENT_URL
-      if (allowedOrigins.includes(origin)) {
+      const normalized = origin.trim().replace(/\/+$/, "");
+      // Allow only explicitly configured origins
+      if (allowedOrigins.includes(normalized)) {
         return callback(null, true);
       }
       callback(null, false);
     },
+    credentials: true,
   })
 );
 
