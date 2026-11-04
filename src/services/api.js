@@ -171,11 +171,19 @@ export const api = {
 
   // AI Appointment Assistant
   assistantChat: async (message, history = []) => {
-    const res = await fetch(`${API_BASE}/assistant/chat`, {
+    let res = await fetch(`${API_BASE}/assistant/chat`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify({ message, history }),
     });
+    // Fallback: If /assistant/chat returns 404, retry /assistant root route
+    if (res.status === 404) {
+      res = await fetch(`${API_BASE}/assistant`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ message, history }),
+      });
+    }
     let data;
     try {
       data = await res.json();

@@ -314,4 +314,77 @@ describe("AI Appointment Assistant - Integration & Safety Tests", () => {
       assert.ok(bodyResult.message.includes("Forbidden") || bodyResult.message.includes("do not own"));
     });
   });
+
+  describe("7. Route Registration & Mounting Compatibility (Prevent Route Mismatches)", () => {
+    let appServer;
+    let serverPort;
+
+    before(async () => {
+      // Dynamically mount an express instance with assistant routes to test route mounting
+      const express = (await import("express")).default;
+      const assistantRoutes = (await import("../routes/assistantRoutes.js")).default;
+
+      const app = express();
+      app.use(express.json());
+      app.use("/api/assistant", assistantRoutes);
+      app.use("/api/appointments/assistant", assistantRoutes);
+
+      await new Promise((resolve) => {
+        appServer = app.listen(0, () => {
+          serverPort = appServer.address().port;
+          resolve();
+        });
+      });
+    });
+
+    after(async () => {
+      if (appServer) {
+        await new Promise((resolve) => appServer.close(resolve));
+      }
+    });
+
+    it("should successfully respond to POST /api/assistant/chat with HTTP 200", async () => {
+      const res = await fetch(`http://127.0.0.1:${serverPort}/api/assistant/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: "Check dentist availability" }),
+      });
+
+      assert.equal(res.status, 200, "POST /api/assistant/chat must return 200 OK");
+      const data = await res.json();
+      assert.equal(data.success, true);
+      assert.ok(data.reply);
+      assert.ok(Array.isArray(data.doctors));
+      assert.ok(data.doctors.some((d) => d.specialty === "Dentist"));
+    });
+
+    it("should successfully respond to POST /api/assistant root mount with HTTP 200", async () => {
+      const res = await fetch(`http://127.0.0.1:${serverPort}/api/assistant`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: "Check dentist availability" }),
+      });
+
+      assert.equal(res.status, 200, "POST /api/assistant must return 200 OK");
+      const data = await res.json();
+      assert.equal(data.success, true);
+    });
+
+    it("should successfully respond to alias POST /api/appointments/assistant with HTTP 200", async () => {
+      const res = await fetch(`http://127.0.0.1:${serverPort}/api/appointments/assistant`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: "Check dentist availability" }),
+      });
+
+      assert.equal(res.status, 200, "POST /api/appointments/assistant must return 200 OK");
+    });
+
+    it("should successfully respond to GET /api/assistant probe with HTTP 200", async () => {
+      const res = await fetch(`http://127.0.0.1:${serverPort}/api/assistant`);
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.status, "ok");
+    });
+  });
 });

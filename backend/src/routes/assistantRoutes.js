@@ -16,7 +16,10 @@ const assistantLimiter = rateLimit({
   },
 });
 
-// POST /api/assistant/chat (with optional JWT auth to identify user when logged in)
+// AI Assistant endpoints (supports both POST /api/assistant and POST /api/assistant/chat)
+router.post("/", assistantLimiter, optionalAuth, handleAssistantChat);
 router.post("/chat", assistantLimiter, optionalAuth, handleAssistantChat);
+router.get("/", (req, res) => res.json({ status: "ok", service: "Appointer AI Assistant API" }));
+router.get("/chat", (req, res) => res.json({ status: "ok", service: "Appointer AI Assistant API" }));
 
 export default router;

@@ -85,6 +85,7 @@ app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/doctors", doctorRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/assistant", assistantRoutes);
+app.use("/api/appointments/assistant", assistantRoutes);
 
 // Root welcome endpoint
 app.get("/", (req, res) => {
@@ -98,6 +99,7 @@ app.get("/", (req, res) => {
         <li><a href="/api/health" target="_blank">GET /api/health</a> - Service health check</li>
         <li><a href="/api/doctors" target="_blank">GET /api/doctors</a> - Doctor directory & search</li>
         <li><a href="/api/appointments" target="_blank">GET /api/appointments</a> - Appointments list (Auth required)</li>
+        <li><a href="/api/assistant" target="_blank">POST /api/assistant/chat</a> - AI Appointment Assistant</li>
       </ul>
       <p style="margin-top: 24px; font-size: 0.9rem; color: #64748b;">
         Frontend application runs at: <a href="http://localhost:5173" style="color: #0284c7;">http://localhost:5173</a>
