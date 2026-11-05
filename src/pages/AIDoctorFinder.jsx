@@ -6,9 +6,12 @@ import { api } from "../services/api";
 const options = [
   "General check-up",
   "Skin & hair",
-  "Dental care",
   "Heart health",
+  "Bones & joints",
+  "Neurology & brain",
+  "Child & pediatrics",
   "Women's health",
+  "Dental care",
   "Eye care",
 ];
 
@@ -19,6 +22,9 @@ const optionQueryMap = {
   "Heart health": "Heart health checkup, blood pressure, or cardiovascular consultation",
   "Women's health": "Women's reproductive health, prenatal guidance, or gynecologist consultation",
   "Eye care": "Eye specialist consultation for vision testing, dry eyes, or eye strain",
+  "Bones & joints": "Orthopedics consultation for bone fracture, joint pain, or knee arthritis",
+  "Neurology & brain": "Neurology consultation for chronic migraine, nerve pain, or neurological evaluation",
+  "Child & pediatrics": "Pediatrician consultation for baby vaccination, child flu, or pediatric care",
 };
 
 function AIDoctorFinder() {
@@ -218,8 +224,17 @@ function AIDoctorFinder() {
                 return (
                   <article className="listing-card" key={docId}>
                     <div className="listing-avatar">{initials}</div>
-                    <h3>{doc.name}</h3>
-                    <p style={{ color: "#1683a0", fontWeight: 700 }}>{doc.specialty}</p>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px" }}>
+                      <h3 style={{ margin: 0 }}>{doc.name}</h3>
+                      {doc.isDemo && (
+                        <span style={{ fontSize: "10px", background: "#fef3c7", color: "#92400e", padding: "2px 6px", borderRadius: "8px", fontWeight: "600", border: "1px solid #fde68a" }}>
+                          Demo
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ color: "#1683a0", fontWeight: 700, margin: "4px 0 2px" }}>
+                      {doc.specialty} {doc.qualifications ? `· ${doc.qualifications}` : ""}
+                    </p>
                     <p className="muted">
                       ★ {doc.rating || 4.8} · {doc.reviewsCount || 120} patient reviews
                     </p>

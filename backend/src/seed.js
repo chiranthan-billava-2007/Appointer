@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import Doctor from "./models/Doctor.js";
 import User from "./models/User.js";
 import { connectDB } from "./config/db.js";
+import { seedDemoDoctors } from "./scripts/seedDemoDoctors.js";
 
 dotenv.config();
 
@@ -133,7 +134,10 @@ const seedData = async () => {
       }
     }
 
-    console.log("[Seed] Database verified with registered doctors successfully.");
+    // Provision the 14 Fictional Demo Doctors across the 7 specialties
+    await seedDemoDoctors();
+
+    console.log("[Seed] Database verified with all registered & demo doctors successfully.");
     process.exit(0);
   } catch (error) {
     console.error("[Seed Error]:", error);

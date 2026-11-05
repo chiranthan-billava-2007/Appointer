@@ -11,6 +11,16 @@ export const KNOWN_SPECIALTIES = [
   "Cardiologist",
   "Eye specialist",
   "Gynecologist",
+  "Neurologist",
+  "Orthopedic surgeon",
+  "Pediatrician",
+  "Cardiology",
+  "Dermatology",
+  "Neurology",
+  "Orthopedics",
+  "Pediatrics",
+  "General Medicine",
+  "Gynecology",
 ];
 
 const STANDARD_DISCLAIMER =
@@ -51,7 +61,19 @@ export function getFallbackSearchCriteria(query) {
   } else if (/\b(women|gynec\w*|period|periods|menstrual|menstruation|pregnancy|pregnant|prenatal|pcos|ovary|uterus|pelvic|hormon\w*)\b/i.test(normalized)) {
     specialty = "Gynecologist";
     keywords.push("women's health", "gynecology");
-  } else if (/\b(fever|cold|cough|headache|stomach|flu|fatigue|weakness|tired|infection|virus|viral|physician|checkup|general|routine|vomiting|nausea|diabetes|annual check)\b/i.test(normalized)) {
+  } else if (/\b(neuro\w*|brain|migraine|nerve|seizure|epilepsy|neuropathy|dizziness|vertigo|stroke)\b/i.test(normalized)) {
+    specialty = "Neurologist";
+    keywords.push("neurology", "brain", "nerve");
+  } else if (/\b(spine|robotic\s*surg\w*)\b/i.test(normalized)) {
+    specialty = "Spine Surgeon";
+    keywords.push("spine", "robotic surgery");
+  } else if (/\b(ortho\w*|bone|joint|fracture|knee|arthritis|shoulder|ligament|tendon)\b/i.test(normalized)) {
+    specialty = "Orthopedics";
+    keywords.push("orthopedics", "bones", "joints");
+  } else if (/\b(pediatr\w*|paediatr\w*|child|children|baby|infant|toddler|newborn|immunization|vaccination)\b/i.test(normalized)) {
+    specialty = "Pediatrician";
+    keywords.push("pediatrics", "child care");
+  } else if (/\b(fever|cold|cough|stomach|flu|fatigue|weakness|tired|infection|virus|viral|physician|checkup|general|routine|vomiting|nausea|diabetes|annual check)\b/i.test(normalized)) {
     specialty = "General physician";
     keywords.push("general wellness", "routine care");
   }
@@ -196,8 +218,13 @@ export async function findMatchingDoctors({ specialty, keywords = [], location =
   // If specialty was determined, search primarily by specialty
   if (specialty && typeof specialty === "string" && specialty.trim()) {
     const escapedSpecialty = specialty.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const root = escapedSpecialty.replace(/(ology|ologist|ics|ician|edist|edicine|ician)$/i, "");
+    const pattern = root.length >= 4 ? `(${escapedSpecialty}|${root})` : escapedSpecialty;
     finalQuery = {
-      specialty: { $regex: new RegExp(escapedSpecialty, "i") },
+      $or: [
+        { specialty: { $regex: new RegExp(pattern, "i") } },
+        { areasOfCare: { $regex: new RegExp(escapedSpecialty, "i") } },
+      ],
     };
   } else if (Array.isArray(keywords) && keywords.length > 0) {
     // If no specialty determined, search areasOfCare and specialty with clinical keywords

@@ -22,6 +22,23 @@ const doctorSchema = new mongoose.Schema(
       type: Number,
       default: 5,
     },
+    qualifications: {
+      type: String,
+      default: "MBBS, MD",
+      trim: true,
+    },
+    consultationFee: {
+      type: Number,
+      default: 600,
+    },
+    profileImage: {
+      type: String,
+      default: "",
+    },
+    isDemo: {
+      type: Boolean,
+      default: false,
+    },
     rating: {
       type: Number,
       default: 4.8,

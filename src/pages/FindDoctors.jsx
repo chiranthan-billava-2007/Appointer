@@ -5,12 +5,15 @@ import { api } from "../services/api";
 
 const specialtiesList = [
   "All specialties",
-  "Dermatologist",
+  "Cardiology",
+  "Dermatology",
+  "General Medicine",
+  "Gynecology",
+  "Neurology",
+  "Orthopedics",
+  "Pediatrics",
   "Dentist",
-  "General physician",
-  "Cardiologist",
   "Eye specialist",
-  "Gynecologist",
 ];
 
 function FindDoctors() {
@@ -94,11 +97,25 @@ function FindDoctors() {
               return (
                 <article className="listing-card" key={docId}>
                   <div className="listing-avatar">{initials}</div>
-                  <h3>{doc.name}</h3>
-                  <p>{doc.specialty}</p>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+                    <h3 style={{ margin: 0 }}>{doc.name}</h3>
+                    {doc.isDemo && (
+                      <span style={{ fontSize: "10px", background: "#fef3c7", color: "#92400e", padding: "2px 6px", borderRadius: "8px", fontWeight: "600", border: "1px solid #fde68a" }}>
+                        Demo
+                      </span>
+                    )}
+                  </div>
+                  <p style={{ margin: "4px 0 2px", fontWeight: "600", color: "#1683a0" }}>
+                    {doc.specialty} {doc.qualifications ? `· ${doc.qualifications}` : ""}
+                  </p>
                   <p className="muted">
                     ★ {doc.rating || 4.9} · {doc.reviewsCount || 120 + index * 34} patient reviews
                   </p>
+                  {doc.consultationFee && (
+                    <p style={{ margin: "2px 0 6px", fontSize: "12px", color: "#0d9488", fontWeight: "600" }}>
+                      ₹{doc.consultationFee} <span style={{ fontWeight: "normal", color: "#64748b" }}>consultation fee</span>
+                    </p>
+                  )}
                   <hr />
                   <small>Available today · {doc.location || "Bengaluru"}</small>
                   <Link to={`/doctors/${docId}`} className="outline-button">

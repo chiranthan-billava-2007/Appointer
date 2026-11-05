@@ -88,6 +88,9 @@ export function getFallbackAppointmentIntent(message, context = {}) {
   else if (/\b(heart\w*|cardio\w*|chest\s*pain|palpitat\w*|bp|blood\s*pressure)\b/i.test(norm)) specialty = "Cardiologist";
   else if (/\b(eye\w*|eyes\w*|vision\w*|cataract\w*|dry\s*eye|sight)\b/i.test(norm)) specialty = "Eye specialist";
   else if (/\b(women\w*|gynec\w*|period\w*|pregnan\w*|prenatal|pcos)\b/i.test(norm)) specialty = "Gynecologist";
+  else if (/\b(neuro\w*|brain|migraine|nerve|seizure)\b/i.test(norm)) specialty = "Neurology";
+  else if (/\b(ortho\w*|bone|joint|fracture|knee|arthritis)\b/i.test(norm)) specialty = "Orthopedics";
+  else if (/\b(pediatr\w*|paediatr\w*|child|baby|infant|toddler)\b/i.test(norm)) specialty = "Pediatrics";
   else if (/\b(physician\w*|general\w*|fever\w*|cold\w*|cough\w*|headache\w*|routine|wellness)\b/i.test(norm)) specialty = "General physician";
 
   // 2. Cancel appointment
@@ -483,7 +486,13 @@ export async function processAssistantMessage({ message, history = [], user = nu
     if (intentData.doctorName) {
       query.name = { $regex: new RegExp(intentData.doctorName.replace("Dr.", "").trim(), "i") };
     } else if (intentData.specialty) {
-      query.specialty = { $regex: new RegExp(intentData.specialty.trim(), "i") };
+      const spec = intentData.specialty.trim();
+      const root = spec.replace(/(ology|ologist|ics|ician|edist|edicine|ician)$/i, "");
+      const pattern = root.length >= 4 ? `(${spec}|${root})` : spec;
+      query.$or = [
+        { specialty: { $regex: new RegExp(pattern, "i") } },
+        { areasOfCare: { $regex: new RegExp(spec, "i") } },
+      ];
     }
 
     const doctors = await Doctor.find(query).lean();
@@ -577,7 +586,13 @@ export async function processAssistantMessage({ message, history = [], user = nu
   if (intentData.doctorName) {
     searchQuery.name = { $regex: new RegExp(intentData.doctorName.replace("Dr.", "").trim(), "i") };
   } else if (intentData.specialty) {
-    searchQuery.specialty = { $regex: new RegExp(intentData.specialty.trim(), "i") };
+    const spec = intentData.specialty.trim();
+    const root = spec.replace(/(ology|ologist|ics|ician|edist|edicine|ician)$/i, "");
+    const pattern = root.length >= 4 ? `(${spec}|${root})` : spec;
+    searchQuery.$or = [
+      { specialty: { $regex: new RegExp(pattern, "i") } },
+      { areasOfCare: { $regex: new RegExp(spec, "i") } },
+    ];
   }
 
   const foundDocs = await Doctor.find(searchQuery).lean();

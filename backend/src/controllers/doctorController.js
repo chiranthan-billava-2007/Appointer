@@ -86,16 +86,28 @@ export const getDoctors = async (req, res) => {
     const { search, specialty } = req.query;
     let query = {};
 
-    if (search && typeof search === "string") {
-      const sanitized = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (search && typeof search === "string" && search.trim()) {
+      const sanitized = search.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       query.$or = [
         { name: { $regex: sanitized, $options: "i" } },
         { specialty: { $regex: sanitized, $options: "i" } },
+        { clinicName: { $regex: sanitized, $options: "i" } },
+        { areasOfCare: { $regex: sanitized, $options: "i" } },
+        { qualifications: { $regex: sanitized, $options: "i" } },
       ];
     }
 
-    if (specialty && specialty !== "All specialties") {
-      query.specialty = specialty;
+    if (specialty && specialty !== "All specialties" && typeof specialty === "string" && specialty.trim()) {
+      const sanitized = specialty.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const root = sanitized.replace(/(ology|ologist|ics|ician|edist|edicine|ician)$/i, "");
+      const pattern = root.length >= 4 ? `^(${sanitized}|${root})` : `^${sanitized}$`;
+      const specialtyCondition = { specialty: { $regex: new RegExp(pattern, "i") } };
+
+      if (query.$or) {
+        query = { $and: [query, specialtyCondition] };
+      } else {
+        query.specialty = { $regex: new RegExp(pattern, "i") };
+      }
     }
 
     let doctors = await Doctor.find(query);
@@ -164,6 +176,10 @@ export const createDoctor = async (req, res) => {
       name,
       specialty,
       experienceYears,
+      qualifications,
+      consultationFee,
+      profileImage,
+      isDemo,
       clinicName,
       location,
       about,
@@ -208,6 +224,10 @@ export const createDoctor = async (req, res) => {
         name: name.trim(),
         specialty: specialty.trim(),
         experienceYears: experienceYears || 5,
+        qualifications: qualifications || "MBBS, MD",
+        consultationFee: consultationFee || 600,
+        profileImage: profileImage || "",
+        isDemo: Boolean(isDemo),
         clinicName: clinicName || "City Health Clinic",
         location: location || "Bengaluru",
         about: about || "Dedicated healthcare professional.",
