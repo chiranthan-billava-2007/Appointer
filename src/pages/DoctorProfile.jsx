@@ -12,10 +12,10 @@ function DoctorProfile() {
 
   useEffect(() => {
     let isMounted = true;
-    setLoading(true);
-    setError("");
-
-    api.getDoctorById(id)
+    const timer = window.setTimeout(() => {
+      setLoading(true);
+      setError("");
+      api.getDoctorById(id)
       .then((data) => {
         if (isMounted) {
           setDoctor(data);
@@ -32,9 +32,11 @@ function DoctorProfile() {
       .finally(() => {
         if (isMounted) setLoading(false);
       });
+    }, 0);
 
     return () => {
       isMounted = false;
+      window.clearTimeout(timer);
     };
   }, [id]);
 

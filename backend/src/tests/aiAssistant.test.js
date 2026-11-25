@@ -16,7 +16,11 @@ import { getDoctorAvailability } from "../controllers/doctorController.js";
 
 dotenv.config();
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/appointer";
+const baseMongoUri = process.env.APPOINTER_TEST_MONGODB_URI || process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/appointer_ai_test";
+const testMongoUri = new URL(baseMongoUri);
+const baseDatabase = decodeURIComponent(testMongoUri.pathname.replace(/^\//, "")) || "appointer_ai_test";
+testMongoUri.pathname = `/${baseDatabase}_ai_assistant_${process.pid}_${Date.now()}`;
+const MONGODB_URI = testMongoUri.toString();
 
 describe("AI Appointment Assistant - Integration & Safety Tests", () => {
   let testPatient1;
@@ -42,6 +46,13 @@ describe("AI Appointment Assistant - Integration & Safety Tests", () => {
         availableSlots: ["Today · 4:30 PM", "Tomorrow · 10:00 AM", "Friday · 2:15 PM"],
       });
     }
+    await Doctor.create({
+      user: new mongoose.Types.ObjectId(),
+      name: "Dr. Rohan Mehta",
+      specialty: "Dentist",
+      location: "Koramangala, Bengaluru",
+      availableSlots: ["Tomorrow · 11:00 AM"],
+    });
 
     // Create unique test users for patient data isolation tests
     const timestamp = Date.now();
@@ -281,11 +292,14 @@ describe("AI Appointment Assistant - Integration & Safety Tests", () => {
       await rescheduleAppointment(mockReq, mockRes);
       assert.equal(statusResult, 200);
       assert.ok(bodyResult.appointment);
-      assert.equal(bodyResult.appointment.slot, "Friday · 2:15 PM");
+      assert.match(bodyResult.appointment.slot, /^\d{4}-\d{2}-\d{2} · 2:15 PM$/);
+      assert.ok(bodyResult.appointment.scheduledAt instanceof Date);
+      assert.equal(bodyResult.appointment.timezone, "Asia/Kolkata");
 
       // Verify persistence in MongoDB
       const updated = await Appointment.findById(testAppointment._id);
-      assert.equal(updated.slot, "Friday · 2:15 PM");
+      assert.equal(updated.slot, bodyResult.appointment.slot);
+      assert.ok(updated.scheduledAt instanceof Date);
     });
 
     it("should reject rescheduling when attempted by a different patient (403 Forbidden)", async () => {

@@ -1891,6 +1891,47 @@ svg {
   background: #edf2f2;
 }
 
+.status-pill.cancelled {
+  color: #b45309;
+  background: #fff4d8;
+}
+
+.dashboard-error {
+  margin: 16px 0;
+  padding: 10px 14px;
+  color: #b91c1c;
+  background: #fee2e2;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.appointment-editor {
+  display: grid;
+  gap: 12px;
+  margin: 22px 0;
+}
+
+.appointment-editor label {
+  display: grid;
+  gap: 6px;
+  max-width: 240px;
+  color: #365565;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.appointment-editor input {
+  padding: 10px;
+  border: 1px solid #cfe1e4;
+  border-radius: 7px;
+}
+
+.slot-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .wide-panel {
   margin-top: 24px;
 }

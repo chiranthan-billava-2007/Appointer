@@ -4,6 +4,7 @@ import Doctor from "../models/Doctor.js";
 import User from "../models/User.js";
 import Appointment from "../models/Appointment.js";
 import { extractDoctorSearchCriteria, findMatchingDoctors } from "../services/aiService.js";
+import { getDoctorTimezone, getSlotsForLocalDate, resolveAppointmentSlot } from "../utils/appointmentDateTime.js";
 
 // Demo/Directory fallback doctors (Directory preview only, direct platform booking not accepted)
 const DEFAULT_DOCTORS = [
@@ -185,6 +186,8 @@ export const createDoctor = async (req, res) => {
       about,
       areasOfCare,
       availableSlots,
+      timezone,
+      weeklyAvailability,
       phone,
     } = req.body;
 
@@ -233,6 +236,8 @@ export const createDoctor = async (req, res) => {
         about: about || "Dedicated healthcare professional.",
         areasOfCare: Array.isArray(areasOfCare) ? areasOfCare : ["General consultation"],
         availableSlots: Array.isArray(availableSlots) ? availableSlots : ["Today · 4:30 PM", "Tomorrow · 10:00 AM"],
+        timezone: timezone || undefined,
+        weeklyAvailability: Array.isArray(weeklyAvailability) ? weeklyAvailability : [],
       });
     } catch (profileError) {
       // HARDENED COMPENSATING ROLLBACK:
@@ -260,6 +265,28 @@ export const createDoctor = async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+};
+
+export const updateMyAvailability = async (req, res) => {
+  try {
+    const { timezone, weeklyAvailability } = req.body;
+    if (typeof timezone !== "string" || !timezone.trim() || !Array.isArray(weeklyAvailability)) {
+      return res.status(400).json({ message: "timezone and weeklyAvailability are required." });
+    }
+    if (weeklyAvailability.length > 42) {
+      return res.status(400).json({ message: "A maximum of 42 weekly availability windows is allowed." });
+    }
+
+    const doctor = await Doctor.findOne({ user: new mongoose.Types.ObjectId(req.user.id) });
+    if (!doctor) return res.status(404).json({ message: "Doctor profile not found." });
+
+    doctor.timezone = timezone.trim();
+    doctor.weeklyAvailability = weeklyAvailability;
+    await doctor.save();
+    res.json(doctor);
+  } catch (error) {
+    res.status(error.name === "ValidationError" ? 400 : 500).json({ message: error.message });
   }
 };
 
@@ -311,7 +338,7 @@ export const aiFindDoctors = async (req, res) => {
           : "No registered doctors currently match your exact criteria. You can browse our directory or modify your query.",
     });
   } catch (error) {
-    console.error("[AI Doctor Finder Controller Error]", error.message);
+    console.error("[AI Doctor Finder Controller Error] Request failed.");
     res.status(error.status || 500).json({
       message: error.status ? error.message : "An error occurred while finding matching doctors. Please try again.",
     });
@@ -335,18 +362,62 @@ export const getDoctorAvailability = async (req, res) => {
       return res.status(404).json({ message: "Doctor not found" });
     }
 
-    // Query active upcoming appointments for this doctor from MongoDB
+    const timezone = getDoctorTimezone(doctor);
+    const requestedDate = req.query?.date;
+
+    if (requestedDate) {
+      const slots = getSlotsForLocalDate(doctor, requestedDate);
+      const slotInstants = slots.map((slot) => slot.scheduledAt);
+      const bookedAppointments = slotInstants.length
+        ? await Appointment.find({
+            doctor: doctor._id,
+            status: "upcoming",
+            scheduledAt: { $in: slotInstants },
+          }).select("scheduledAt")
+        : [];
+      const bookedInstants = new Set(bookedAppointments.map((appointment) => appointment.scheduledAt.getTime()));
+      const available = slots.filter((slot) => !bookedInstants.has(slot.scheduledAt.getTime()));
+      const booked = slots.filter((slot) => bookedInstants.has(slot.scheduledAt.getTime()));
+
+      return res.json({
+        doctorId: doctor._id,
+        doctorName: doctor.name,
+        specialty: doctor.specialty,
+        clinicName: doctor.clinicName,
+        location: doctor.location,
+        date: requestedDate,
+        timezone,
+        allSlots: slots.map((slot) => slot.slot),
+        availableSlots: available.map((slot) => slot.slot),
+        bookedSlots: booked.map((slot) => slot.slot),
+        slots: available,
+      });
+    }
+
+    // Backward-compatible response for clients that do not yet request a date.
     const upcomingAppointments = await Appointment.find({
       doctor: doctor._id,
       status: "upcoming",
-    }).select("slot");
+    }).select("slot scheduledAt");
 
     const normalize = (s) => (s || "").trim().replace(/\s+/g, " ").toLowerCase();
     const bookedSet = new Set(upcomingAppointments.map((a) => normalize(a.slot)));
+    const bookedInstants = new Set(upcomingAppointments
+      .filter((appointment) => appointment.scheduledAt instanceof Date)
+      .map((appointment) => appointment.scheduledAt.getTime()));
 
     const allSlots = doctor.availableSlots || [];
-    const availableSlots = allSlots.filter((s) => !bookedSet.has(normalize(s)));
-    const bookedSlots = allSlots.filter((s) => bookedSet.has(normalize(s)));
+    const isBooked = (slot) => {
+      if (bookedSet.has(normalize(slot))) return true;
+      try {
+        const resolved = resolveAppointmentSlot({ doctor, slot });
+        return bookedInstants.has(resolved.scheduledAt.getTime());
+      } catch {
+        return false;
+      }
+    };
+    const availableSlots = allSlots.filter((slot) => !isBooked(slot));
+    const bookedSlots = allSlots.filter(isBooked);
 
     res.json({
       doctorId: doctor._id,
@@ -354,11 +425,12 @@ export const getDoctorAvailability = async (req, res) => {
       specialty: doctor.specialty,
       clinicName: doctor.clinicName,
       location: doctor.location,
+      timezone,
       allSlots,
       availableSlots,
       bookedSlots,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(error.status || 500).json({ message: error.message });
   }
 };

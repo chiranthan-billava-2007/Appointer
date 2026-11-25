@@ -30,6 +30,24 @@ const getAuthHeaders = () => {
   };
 };
 
+const parseResponse = async (res, fallbackMessage) => {
+  let data = {};
+  try {
+    data = await res.json();
+  } catch {
+    // Keep a safe fallback when a proxy or service sends a non-JSON response.
+  }
+  if (!res.ok) {
+    const error = new Error(data.message || fallbackMessage);
+    error.status = res.status;
+    if (res.status === 401 && typeof window !== "undefined") {
+      window.dispatchEvent(new Event("appointer:auth-expired"));
+    }
+    throw error;
+  }
+  return data;
+};
+
 export const api = {
   // Auth
   register: async (userData) => {
@@ -38,9 +56,7 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userData),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Registration failed");
-    return data;
+    return parseResponse(res, "Registration failed");
   },
 
   login: async (credentials, portalRole) => {
@@ -49,18 +65,14 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...credentials, portalRole }),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Login failed");
-    return data;
+    return parseResponse(res, "Login failed");
   },
 
   getMe: async () => {
     const res = await fetch(`${API_BASE}/auth/me`, {
       headers: getAuthHeaders(),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Failed to authenticate session");
-    return data;
+    return parseResponse(res, "Failed to authenticate session");
   },
 
   // Doctors
@@ -114,9 +126,12 @@ export const api = {
     const res = await fetch(`${API_BASE}/appointments`, {
       headers: getAuthHeaders(),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Failed to load appointments");
-    return data;
+    return parseResponse(res, "Failed to load appointments");
+  },
+
+  getDashboard: async () => {
+    const res = await fetch(`${API_BASE}/appointments/dashboard`, { headers: getAuthHeaders() });
+    return parseResponse(res, "Failed to load dashboard");
   },
 
   bookAppointment: async (appointmentData) => {
@@ -125,9 +140,7 @@ export const api = {
       headers: getAuthHeaders(),
       body: JSON.stringify(appointmentData),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Failed to book appointment");
-    return data;
+    return parseResponse(res, "Failed to book appointment");
   },
 
   updateAppointmentStatus: async (id, status) => {
@@ -136,9 +149,7 @@ export const api = {
       headers: getAuthHeaders(),
       body: JSON.stringify({ status }),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Status update failed");
-    return data;
+    return parseResponse(res, "Status update failed");
   },
 
   cancelAppointment: async (id) => {
@@ -146,27 +157,22 @@ export const api = {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Failed to cancel appointment");
-    return data;
+    return parseResponse(res, "Failed to cancel appointment");
   },
 
-  rescheduleAppointment: async (id, slot) => {
+  rescheduleAppointment: async (id, appointmentTime) => {
     const res = await fetch(`${API_BASE}/appointments/${id}/reschedule`, {
       method: "PATCH",
       headers: getAuthHeaders(),
-      body: JSON.stringify({ slot }),
+      body: JSON.stringify(typeof appointmentTime === "string" ? { slot: appointmentTime } : appointmentTime),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Failed to reschedule appointment");
-    return data;
+    return parseResponse(res, "Failed to reschedule appointment");
   },
 
-  getDoctorAvailability: async (doctorId) => {
-    const res = await fetch(`${API_BASE}/doctors/${doctorId}/availability`);
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Failed to fetch doctor availability");
-    return data;
+  getDoctorAvailability: async (doctorId, date) => {
+    const query = date ? `?${new URLSearchParams({ date }).toString()}` : "";
+    const res = await fetch(`${API_BASE}/doctors/${doctorId}/availability${query}`);
+    return parseResponse(res, "Failed to fetch doctor availability");
   },
 
   // AI Appointment Assistant

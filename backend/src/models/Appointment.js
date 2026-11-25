@@ -50,6 +50,14 @@ const appointmentSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    // Optional for legacy display-only records. New bookings always set both fields.
+    scheduledAt: {
+      type: Date,
+    },
+    timezone: {
+      type: String,
+      trim: true,
+    },
     status: {
       type: String,
       enum: ["upcoming", "completed", "cancelled"],
@@ -78,6 +86,20 @@ appointmentSchema.index(
     unique: true,
     partialFilterExpression: { status: "upcoming", doctor: { $exists: true } },
     name: "unique_upcoming_doctor_slot",
+  }
+);
+
+// Date-based uniqueness is separate so old appointments without a real instant remain readable.
+appointmentSchema.index(
+  { doctor: 1, scheduledAt: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      status: "upcoming",
+      doctor: { $exists: true },
+      scheduledAt: { $type: "date" },
+    },
+    name: "unique_upcoming_doctor_scheduled_at",
   }
 );
 

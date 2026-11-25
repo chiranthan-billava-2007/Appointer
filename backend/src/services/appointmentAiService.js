@@ -1,6 +1,10 @@
 import { GoogleGenAI } from "@google/genai";
 import Doctor from "../models/Doctor.js";
 import Appointment from "../models/Appointment.js";
+import { resolveAppointmentSlot } from "../utils/appointmentDateTime.js";
+import { classifyAiError, runGeminiWithRetry, safeString } from "../utils/aiReliability.js";
+
+const VALID_INTENTS = new Set(["BOOK_APPOINTMENT", "FIND_DOCTORS", "VIEW_APPOINTMENTS", "RESCHEDULE_APPOINTMENT", "CANCEL_APPOINTMENT", "CHECK_AVAILABILITY", "MEDICAL_ADVICE", "GENERAL"]);
 
 const STANDARD_DISCLAIMER =
   "This tool is for appointment scheduling and doctor discovery only. It does not provide medical diagnoses, treatment plans, or prescription medications. Please consult a qualified physician for medical concerns or contact emergency services in urgent situations.";
@@ -30,11 +34,22 @@ export async function getDoctorRealAvailableSlots(doctor) {
   const upcomingAppointments = await Appointment.find({
     doctor: doctor._id,
     status: "upcoming",
-  }).select("slot");
+  }).select("slot scheduledAt");
 
   const bookedSet = new Set(upcomingAppointments.map((a) => normalizeSlot(a.slot)));
+  const bookedInstants = new Set(upcomingAppointments
+    .filter((appointment) => appointment.scheduledAt instanceof Date)
+    .map((appointment) => appointment.scheduledAt.getTime()));
   const allSlots = doctor.availableSlots || [];
-  return allSlots.filter((slot) => !bookedSet.has(normalizeSlot(slot)));
+  return allSlots.filter((slot) => {
+    if (bookedSet.has(normalizeSlot(slot))) return false;
+    try {
+      const resolved = resolveAppointmentSlot({ doctor, slot });
+      return !bookedInstants.has(resolved.scheduledAt.getTime());
+    } catch {
+      return false;
+    }
+  });
 }
 
 /**
@@ -167,6 +182,11 @@ export async function extractAppointmentIntent(message, context = {}) {
       userReply: "How can I help you with your healthcare appointments today?",
     };
   }
+  if (trimmed.length > 500) {
+    const error = new Error("Message too long. Please keep appointment requests under 500 characters.");
+    error.status = 400;
+    throw error;
+  }
 
   const apiKey = (process.env.GEMINI_API_KEY || "").trim();
   if (!apiKey || apiKey === "your_gemini_api_key_here") {
@@ -177,12 +197,18 @@ export async function extractAppointmentIntent(message, context = {}) {
     const ai = new GoogleGenAI({ apiKey });
     const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
+    const boundedHistory = Array.isArray(context.history)
+      ? context.history.slice(-6).map((entry) => ({
+        role: entry?.role === "user" ? "user" : "assistant",
+        content: safeString(entry?.content || entry?.text, 500),
+      }))
+      : [];
     const prompt = `You are the AI Appointment Assistant for the Appointer healthcare platform.
 The patient sent the following message:
 "${trimmed}"
 
 Previous conversation context (if any):
-${JSON.stringify(context.history || [])}
+${JSON.stringify(boundedHistory)}
 
 Available Specialties on Appointer:
 - "Dermatologist"
@@ -224,26 +250,27 @@ Respond with ONLY valid JSON strictly matching this schema:
   "userReply": "<A friendly, concise 1-2 sentence response directly answering the user>"
 }`;
 
-    const response = await ai.models.generateContent({
+    const response = await runGeminiWithRetry(() => ai.models.generateContent({
       model: modelName,
       contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        temperature: 0.1,
-      },
+      config: { responseMimeType: "application/json", temperature: 0.1 },
+    }), {
+      timeoutMs: Number(process.env.GEMINI_TIMEOUT_MS) || 8000,
+      maxAttempts: Number(process.env.GEMINI_MAX_ATTEMPTS) || 2,
     });
 
+    if (!response?.text || typeof response.text !== "string") throw new Error("Empty response received from Gemini API");
     const parsed = JSON.parse(response.text.trim());
     return {
-      intent: parsed.intent || "GENERAL",
-      specialty: parsed.specialty || "",
-      doctorName: parsed.doctorName || "",
-      slot: parsed.slot || "",
-      notes: parsed.notes || "",
-      userReply: parsed.userReply || "I am ready to help with your appointments.",
+      intent: VALID_INTENTS.has(parsed.intent) ? parsed.intent : "GENERAL",
+      specialty: safeString(parsed.specialty, 100),
+      doctorName: safeString(parsed.doctorName, 120),
+      slot: safeString(parsed.slot, 120),
+      notes: safeString(parsed.notes, 300),
+      userReply: safeString(parsed.userReply, 500) || "I am ready to help with your appointments.",
     };
   } catch (err) {
-    console.warn("[AI Assistant] Gemini parse failed, falling back to deterministic extractor:", err.message);
+    console.warn(`[AI Assistant] Gemini unavailable or malformed; using deterministic fallback (${classifyAiError(err)}).`);
     return getFallbackAppointmentIntent(trimmed, context);
   }
 }

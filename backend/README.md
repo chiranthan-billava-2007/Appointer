@@ -26,7 +26,7 @@ Copy `.env.example` to `.env` (or adjust values in `.env`):
 ```bash
 PORT=5000
 MONGODB_URI=mongodb://127.0.0.1:27017/appointer
-JWT_SECRET=supersecret_appointer_jwt_key_change_in_production
+JWT_SECRET=your-strong-random-secret-here
 CLIENT_URL=http://localhost:5173
 ```
 

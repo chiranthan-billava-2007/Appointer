@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import Doctor from "../models/Doctor.js";
+import { classifyAiError, runGeminiWithRetry, safeString } from "../utils/aiReliability.js";
 
 /**
  * Standard specialties offered by registered doctors on Appointer
@@ -171,13 +172,13 @@ Respond with ONLY valid JSON adhering strictly to this schema:
   "disclaimer": "This tool is for doctor discovery and appointment matching only. It does not provide medical diagnoses, treatment plans, or emergency care advice. Please consult a qualified physician for medical concerns or contact emergency services in urgent situations."
 }`;
 
-    const response = await ai.models.generateContent({
+    const response = await runGeminiWithRetry(() => ai.models.generateContent({
       model: modelName,
       contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        temperature: 0.1,
-      },
+      config: { responseMimeType: "application/json", temperature: 0.1 },
+    }), {
+      timeoutMs: Number(process.env.GEMINI_TIMEOUT_MS) || 8000,
+      maxAttempts: Number(process.env.GEMINI_MAX_ATTEMPTS) || 2,
     });
 
     const responseText = response.text;
@@ -188,21 +189,21 @@ Respond with ONLY valid JSON adhering strictly to this schema:
     const parsed = JSON.parse(responseText.trim());
 
     return {
-      specialty: typeof parsed.specialty === "string" ? parsed.specialty.trim() : "",
+      specialty: safeString(parsed.specialty, 100),
       keywords: Array.isArray(parsed.keywords)
-        ? parsed.keywords.map((k) => String(k).trim().toLowerCase()).filter((k) => k && !STOP_WORDS.has(k))
+        ? parsed.keywords.filter((k) => typeof k === "string").map((k) => safeString(k, 60).toLowerCase()).filter((k) => k && !STOP_WORDS.has(k)).slice(0, 8)
         : [],
-      location: typeof parsed.location === "string" ? parsed.location.trim() : "",
+      location: safeString(parsed.location, 100),
       reasoning:
-        typeof parsed.reasoning === "string" && parsed.reasoning.trim()
-          ? parsed.reasoning.trim()
+        safeString(parsed.reasoning, 500)
+          ? safeString(parsed.reasoning, 500)
           : "Recommended based on your care search criteria.",
       disclaimer: STANDARD_DISCLAIMER,
       source: "gemini",
     };
   } catch (geminiError) {
     // Log failure without exposing secrets or disrupting the patient
-    console.warn("[AI Doctor Finder] Gemini API call failed, falling back to local extractor:", geminiError.message);
+    console.warn(`[AI Doctor Finder] Gemini unavailable; using local fallback (${classifyAiError(geminiError)}).`);
     return getFallbackSearchCriteria(trimmedQuery);
   }
 }
@@ -260,13 +261,14 @@ export async function findMatchingDoctors({ specialty, keywords = [], location =
   }
 
   // STRICT RULE: Query ONLY actual registered doctors in MongoDB
-  let doctors = await Doctor.find(finalQuery).select("-__v").lean();
+  let doctors = await Doctor.find(finalQuery).select("-__v -user").limit(20).lean();
 
   // If location filter resulted in 0 matches, loosen location filter to still show verified specialists
   if (doctors.length === 0 && locationFilter && specialty) {
     const escapedSpecialty = specialty.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     doctors = await Doctor.find({ specialty: { $regex: new RegExp(escapedSpecialty, "i") } })
-      .select("-__v")
+      .select("-__v -user")
+      .limit(20)
       .lean();
   }
 

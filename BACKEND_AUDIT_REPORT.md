@@ -296,12 +296,12 @@ Inspection of the active database `appointer` revealed:
 - **Location:** [`backend/src/middleware/authMiddleware.js#L13`](file:///home/chiranthan/appointer-react-temp/backend/src/middleware/authMiddleware.js#L13), [`backend/.env#L4`](file:///home/chiranthan/appointer-react-temp/backend/.env#L4)
 - **Description:**
   1. Both `authController.js` and `authMiddleware.js` fall back to the known public string:
-     `process.env.JWT_SECRET || "supersecret_appointer_jwt_key_change_in_production"`
+     `process.env.JWT_SECRET || "your-strong-random-secret-here"`
   2. Inspection of `backend/.env` revealed corrupted line entries:
      ```env
      JWT_SECRET=your_strong_random_secretPORT=5000
      MONGODB_URI=mongodb://127.0.0.1:27017/appointer
-     JWT_SECRET=supersecret_appointer_jwt_key_change_in_production
+     JWT_SECRET=your-strong-random-secret-here
      CLIENT_URL=http://localhost:5173
      ```
 - **Impact:** If `JWT_SECRET` is unset, an attacker knowing the fallback string can forge administrative JWT tokens and impersonate any user.

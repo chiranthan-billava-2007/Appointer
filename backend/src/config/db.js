@@ -10,6 +10,8 @@ export const connectDB = async () => {
   try {
     const conn = await mongoose.connect(uri, {
       serverSelectionTimeoutMS: 30000,
+      // Index changes are applied only through the reviewed migration script.
+      autoIndex: false,
     });
     console.log(`[MongoDB] Connected: ${conn.connection.host}`);
     return conn;

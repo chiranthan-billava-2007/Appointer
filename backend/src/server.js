@@ -1,4 +1,5 @@
 import express from "express";
+import http from "http";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -10,6 +11,7 @@ import authRoutes from "./routes/authRoutes.js";
 import doctorRoutes from "./routes/doctorRoutes.js";
 import appointmentRoutes from "./routes/appointmentRoutes.js";
 import assistantRoutes from "./routes/assistantRoutes.js";
+import { attachSocketServer } from "./realtime/socketServer.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
@@ -27,6 +29,7 @@ if (!jwtSecret || jwtSecret.length < 32 || jwtSecret.includes("change_in_product
 }
 
 const app = express();
+const httpServer = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 
 // Trust reverse proxy headers (required for Render, Cloudflare, Heroku, etc.)
@@ -132,8 +135,12 @@ app.use((err, req, res, next) => {
 
 // REQUIREMENT: Connect to MongoDB BEFORE starting the HTTP server
 // If database connection fails, the process exits and does not listen on the port
+const socketIo = attachSocketServer(httpServer, { allowedOrigins });
+
 connectDB().then(() => {
-  app.listen(PORT, () => {
+  httpServer.listen(PORT, () => {
     console.log(`[Appointer API] Server running on http://localhost:${PORT}`);
   });
 });
+
+export { app, httpServer, socketIo };

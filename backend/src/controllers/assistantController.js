@@ -32,7 +32,7 @@ export const handleAssistantChat = async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    console.error("[AI Assistant Controller Error]", error.message);
+    console.error("[AI Assistant Controller Error] Request failed.");
     res.status(500).json({
       message: "An error occurred while processing your request with the AI Assistant. Please try again.",
     });

@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import Doctor from "../models/Doctor.js";
+import { logAuthTiming, setAuthServerTiming, timerElapsedMs, timerStart } from "../utils/authTiming.js";
 
 const generateToken = (id, role, name, email) => {
   const jwtSecret = process.env.JWT_SECRET;
@@ -62,6 +63,11 @@ export const registerUser = async (req, res) => {
 };
 
 export const loginUser = async (req, res) => {
+  const totalStart = timerStart();
+  let lookupMs;
+  let bcryptMs;
+  let doctorProfileMs;
+  let jwtMs;
   try {
     const { email, password, portalRole } = req.body;
 
@@ -79,13 +85,21 @@ export const loginUser = async (req, res) => {
 
     const normalizedEmail = email.trim().toLowerCase();
     // Explicitly select password since it has select: false in schema
+    const lookupStart = timerStart();
     const user = await User.findOne({ email: normalizedEmail }).select("+password");
+    lookupMs = timerElapsedMs(lookupStart);
     if (!user) {
+      setAuthServerTiming(res, { lookup: lookupMs, total: timerElapsedMs(totalStart) });
+      logAuthTiming("login", { status: 401, lookupMs, totalMs: timerElapsedMs(totalStart) });
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
+    const bcryptStart = timerStart();
     const isMatch = await bcrypt.compare(password, user.password);
+    bcryptMs = timerElapsedMs(bcryptStart);
     if (!isMatch) {
+      setAuthServerTiming(res, { lookup: lookupMs, bcrypt: bcryptMs, total: timerElapsedMs(totalStart) });
+      logAuthTiming("login", { status: 401, lookupMs, bcryptMs, totalMs: timerElapsedMs(totalStart) });
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
@@ -99,7 +113,9 @@ export const loginUser = async (req, res) => {
     // If logging in through doctor portal, verify linked doctor profile exists
     let doctorProfile = null;
     if (user.role === "doctor") {
+      const doctorStart = timerStart();
       doctorProfile = await Doctor.findOne({ user: user._id });
+      doctorProfileMs = timerElapsedMs(doctorStart);
       if (!doctorProfile) {
         return res.status(403).json({
           message: "Doctor account exists but onboarding is incomplete. No linked doctor profile was found.",
@@ -107,7 +123,12 @@ export const loginUser = async (req, res) => {
       }
     }
 
+    const jwtStart = timerStart();
     const token = generateToken(user._id, user.role, user.name, user.email);
+    jwtMs = timerElapsedMs(jwtStart);
+    const totalMs = timerElapsedMs(totalStart);
+    setAuthServerTiming(res, { lookup: lookupMs, bcrypt: bcryptMs, doctor: doctorProfileMs, jwt: jwtMs, total: totalMs });
+    logAuthTiming("login", { status: 200, role: user.role, lookupMs, bcryptMs, doctorProfileMs, jwtMs, totalMs });
 
     res.json({
       _id: user._id,
@@ -118,21 +139,32 @@ export const loginUser = async (req, res) => {
       token,
     });
   } catch (error) {
+    logAuthTiming("me", { status: 500, totalMs: timerElapsedMs(totalStart) });
     res.status(500).json({ message: error.message });
   }
 };
 
 export const getMe = async (req, res) => {
+  const totalStart = timerStart();
   try {
+    const lookupStart = timerStart();
     const user = await User.findById(req.user.id).select("-password");
+    const lookupMs = timerElapsedMs(lookupStart);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
     let doctorProfile = null;
+    let doctorProfileMs;
     if (user.role === "doctor") {
+      const doctorStart = timerStart();
       doctorProfile = await Doctor.findOne({ user: user._id });
+      doctorProfileMs = timerElapsedMs(doctorStart);
     }
+
+    const totalMs = timerElapsedMs(totalStart);
+    setAuthServerTiming(res, { lookup: lookupMs, doctor: doctorProfileMs, total: totalMs });
+    logAuthTiming("me", { status: 200, role: user.role, lookupMs, doctorProfileMs, totalMs });
 
     res.json({
       _id: user._id,

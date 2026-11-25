@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import PublicLayout from "../layouts/PublicLayout";
 import { useAuth } from "../context/useAuth";
+import { authTimingStart, logAuthTiming } from "../utils/authPerformance";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -15,6 +16,7 @@ function Login() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const navigationStart = authTimingStart();
     setError("");
     setSubmitting(true);
 
@@ -22,6 +24,7 @@ function Login() {
       await login({ email, password }, "patient");
       const destination = location.state?.from?.pathname || "/patient/dashboard";
       navigate(destination, { replace: true });
+      requestAnimationFrame(() => logAuthTiming("login_to_dashboard", navigationStart, { role: "patient" }));
     } catch (err) {
       setError(err.message || "Failed to log in");
     } finally {

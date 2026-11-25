@@ -6,6 +6,7 @@ import {
   deleteAppointment,
   rescheduleAppointment,
 } from "../controllers/appointmentController.js";
+import { getDashboardSummary } from "../controllers/dashboardController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { authorize } from "../middleware/rbacMiddleware.js";
 
@@ -16,6 +17,7 @@ router.use(protect);
 
 // GET /api/appointments: Filtered by user role (patient gets own, doctor gets assigned, admin gets all)
 router.get("/", getAppointments);
+router.get("/dashboard", getDashboardSummary);
 
 // POST /api/appointments: Patients and Admins can book appointments
 router.post("/", authorize("patient", "admin"), createAppointment);

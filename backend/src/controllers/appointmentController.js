@@ -1,12 +1,9 @@
 import mongoose from "mongoose";
 import Appointment from "../models/Appointment.js";
 import Doctor from "../models/Doctor.js";
-
-// Helper to sanitize slot string: collapse multiple spaces, trim whitespace
-function normalizeSlot(slot) {
-  if (!slot || typeof slot !== "string") return "";
-  return slot.trim().replace(/\s+/g, " ");
-}
+import { buildNormalizedSlotRegex, normalizeSlot } from "../utils/appointmentSlotUtils.js";
+import { resolveAppointmentSlot } from "../utils/appointmentDateTime.js";
+import { emitAppointmentEvent } from "../realtime/socketServer.js";
 
 export const getAppointments = async (req, res) => {
   try {
@@ -43,14 +40,13 @@ export const getAppointments = async (req, res) => {
 
 export const createAppointment = async (req, res) => {
   try {
-    const { doctorId, slot, notes } = req.body;
+    const { doctorId, slot, date, time, notes } = req.body;
 
-    if (!doctorId || !slot) {
-      return res.status(400).json({ message: "doctorId and slot are required" });
+    if (!doctorId || (!(date && time) && !slot)) {
+      return res.status(400).json({ message: "doctorId and either date/time or slot are required" });
     }
 
-    const normalizedSlot = normalizeSlot(slot);
-    if (!normalizedSlot) {
+    if (slot != null && (typeof slot !== "string" || !normalizeSlot(slot))) {
       return res.status(400).json({ message: "Invalid slot format provided" });
     }
 
@@ -70,21 +66,24 @@ export const createAppointment = async (req, res) => {
       return res.status(404).json({ message: "Doctor not found" });
     }
 
-    // Canonicalize slot to doctor's official schedule if matched
-    const canonicalSlot = doctorDoc.availableSlots?.find(
-      (s) => normalizeSlot(s).toLowerCase() === normalizedSlot.toLowerCase()
-    );
-    const slotToSave = canonicalSlot || normalizedSlot;
+    // Only allow slots configured by this doctor; persist the schedule's canonical spelling.
+    const requested = resolveAppointmentSlot({ doctor: doctorDoc, date, time, slot });
 
-    // Check if slot is already booked for this doctor (defense-in-depth check)
+    // Defense-in-depth check; the partial unique index below remains the race-safe guard.
     const existing = await Appointment.findOne({
       doctor: doctorDoc._id,
-      slot: { $regex: new RegExp(`^${slotToSave.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") },
       status: "upcoming",
+      $or: [
+        { scheduledAt: requested.scheduledAt },
+        {
+          scheduledAt: { $exists: false },
+          slot: { $regex: buildNormalizedSlotRegex(slot || requested.slot) },
+        },
+      ],
     });
     if (existing) {
       return res.status(409).json({
-        message: `The slot '${slotToSave}' with ${doctorDoc.name} is already booked. Please choose another time.`,
+        message: `The slot '${requested.slot}' with ${doctorDoc.name} is already booked. Please choose another time.`,
       });
     }
 
@@ -103,23 +102,27 @@ export const createAppointment = async (req, res) => {
         specialty: doctorDoc.specialty,
         clinicName: doctorDoc.clinicName,
         location: doctorDoc.location,
-        slot: slotToSave,
+        slot: requested.slot,
+        scheduledAt: requested.scheduledAt,
+        timezone: requested.timezone,
         status: "upcoming",
-        notes: notes ? notes.trim() : "",
+        notes: typeof notes === "string" ? notes.trim() : "",
       });
+
+      emitAppointmentEvent("appointment:created", newAppointment);
 
       return res.status(201).json(newAppointment);
     } catch (dbErr) {
       // Catch MongoDB duplicate key error (code 11000) from partial unique index
       if (dbErr.code === 11000) {
         return res.status(409).json({
-          message: `The slot '${slotToSave}' with ${doctorDoc.name} is already booked. Please choose another time.`,
+          message: `The slot '${requested.slot}' with ${doctorDoc.name} is already booked. Please choose another time.`,
         });
       }
       throw dbErr;
     }
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(error.status || 400).json({ message: error.message });
   }
 };
 
@@ -175,6 +178,8 @@ export const updateAppointmentStatus = async (req, res) => {
     appointment.status = status;
     await appointment.save();
 
+    emitAppointmentEvent(status === "completed" ? "appointment:completed" : status === "cancelled" ? "appointment:cancelled" : "appointment:updated", appointment);
+
     res.json(appointment);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -226,6 +231,8 @@ export const deleteAppointment = async (req, res) => {
     appointment.status = "cancelled";
     await appointment.save();
 
+    emitAppointmentEvent("appointment:cancelled", appointment);
+
     res.json({ message: "Appointment cancelled successfully", appointment });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -236,14 +243,12 @@ export const deleteAppointment = async (req, res) => {
 export const rescheduleAppointment = async (req, res) => {
   try {
     const { id } = req.params;
-    const { slot } = req.body;
+    const { slot, date, time } = req.body;
 
-    if (!slot || typeof slot !== "string" || !slot.trim()) {
-      return res.status(400).json({ message: "A new slot is required for rescheduling" });
+    if (!(date && time) && (typeof slot !== "string" || !slot.trim())) {
+      return res.status(400).json({ message: "A new date/time or slot is required for rescheduling" });
     }
-
-    const normalizedSlot = normalizeSlot(slot);
-    if (!normalizedSlot) {
+    if (slot != null && (typeof slot !== "string" || !normalizeSlot(slot))) {
       return res.status(400).json({ message: "Invalid slot format provided" });
     }
 
@@ -282,36 +287,53 @@ export const rescheduleAppointment = async (req, res) => {
       return res.status(404).json({ message: "Attending doctor profile not found" });
     }
 
-    // Verify new slot is in doctor's scheduled availableSlots and canonicalize casing
-    const canonicalSlot = doctorDoc.availableSlots.find(
-      (s) => normalizeSlot(s).toLowerCase() === normalizedSlot.toLowerCase()
-    );
-    if (!canonicalSlot) {
-      return res.status(400).json({
-        message: `Slot '${normalizedSlot}' is not in ${doctorDoc.name}'s schedule. Available slots: ${doctorDoc.availableSlots.join(", ")}`,
-      });
-    }
+    const requested = resolveAppointmentSlot({ doctor: doctorDoc, date, time, slot });
 
-    // Check if slot is already booked by another upcoming appointment for this doctor
     const conflicting = await Appointment.findOne({
       _id: { $ne: appointment._id },
       doctor: appointment.doctor,
-      slot: { $regex: new RegExp(`^${canonicalSlot.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") },
       status: "upcoming",
+      $or: [
+        { scheduledAt: requested.scheduledAt },
+        {
+          scheduledAt: { $exists: false },
+          slot: { $regex: buildNormalizedSlotRegex(slot || requested.slot) },
+        },
+      ],
     });
-
     if (conflicting) {
       return res.status(409).json({
-        message: `The slot '${canonicalSlot}' with ${doctorDoc.name} is already booked. Please choose another time.`,
+        message: `The slot '${requested.slot}' with ${doctorDoc.name} is already booked. Please choose another time.`,
       });
     }
 
-    appointment.slot = canonicalSlot;
-    await appointment.save();
+    // Compare-and-swap prevents simultaneous reschedules of this appointment from overwriting each other.
+    const originalSlotFilter = appointment.scheduledAt
+      ? { scheduledAt: appointment.scheduledAt }
+      : { scheduledAt: { $exists: false }, slot: appointment.slot };
+    const updatedAppointment = await Appointment.findOneAndUpdate(
+      { _id: appointment._id, status: "upcoming", ...originalSlotFilter },
+      {
+        $set: {
+          slot: requested.slot,
+          scheduledAt: requested.scheduledAt,
+          timezone: requested.timezone,
+        },
+      },
+      { returnDocument: "after", runValidators: true }
+    );
+
+    if (!updatedAppointment) {
+      return res.status(409).json({
+        message: "This appointment changed while you were rescheduling it. Refresh and try again.",
+      });
+    }
+
+    emitAppointmentEvent("appointment:rescheduled", updatedAppointment);
 
     res.json({
       message: "Appointment rescheduled successfully",
-      appointment,
+      appointment: updatedAppointment,
     });
   } catch (error) {
     if (error.code === 11000) {
@@ -319,6 +341,6 @@ export const rescheduleAppointment = async (req, res) => {
         message: "The slot is already booked. Please choose another time.",
       });
     }
-    res.status(500).json({ message: error.message });
+    res.status(error.status || 500).json({ message: error.message });
   }
 };

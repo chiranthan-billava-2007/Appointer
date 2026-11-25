@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { AuthContext } from "./AuthContextCore";
 import { api } from "../services/api";
+import { authTimingStart, logAuthTiming } from "../utils/authPerformance";
+import { connectSocket, disconnectSocket } from "../services/socket";
 
 const getInitialToken = () => {
   return typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -18,6 +20,7 @@ export function AuthProvider({ children }) {
     const token = getInitialToken();
 
     if (token) {
+      const initStart = authTimingStart();
       const requestId = ++activeRequestIdRef.current;
 
       api.getMe()
@@ -26,12 +29,14 @@ export function AuthProvider({ children }) {
           if (isMounted && activeRequestIdRef.current === requestId) {
             setUser(userData);
           }
+          logAuthTiming("context_init", initStart, { outcome: "success" });
         })
         .catch(() => {
           if (isMounted && activeRequestIdRef.current === requestId) {
             localStorage.removeItem("token");
             setUser(null);
           }
+          logAuthTiming("context_init", initStart, { outcome: "expired_or_failed" });
         })
         .finally(() => {
           if (isMounted && activeRequestIdRef.current === requestId) {
@@ -45,11 +50,33 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
+  useEffect(() => {
+    const token = getInitialToken();
+    if (user && token) connectSocket(token);
+    else if (!user) disconnectSocket();
+    return () => {
+      if (!user) disconnectSocket();
+    };
+  }, [user]);
+
+  useEffect(() => {
+    const handleExpiredSession = () => {
+      ++activeRequestIdRef.current;
+      localStorage.removeItem("token");
+      setUser(null);
+      setLoading(false);
+    };
+    window.addEventListener("appointer:auth-expired", handleExpiredSession);
+    return () => window.removeEventListener("appointer:auth-expired", handleExpiredSession);
+  }, []);
+
   const login = async (credentials, portalRole) => {
+    const loginStart = authTimingStart();
     // Invalidate any ongoing in-flight background requests
     const requestId = ++activeRequestIdRef.current;
 
     const response = await api.login(credentials, portalRole);
+    logAuthTiming("client_login", loginStart, { outcome: "success", role: response.role });
     if (response.token && activeRequestIdRef.current === requestId) {
       localStorage.setItem("token", response.token);
       setUser({
@@ -87,6 +114,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("token");
     setUser(null);
     setLoading(false);
+    disconnectSocket();
   };
 
   const value = {

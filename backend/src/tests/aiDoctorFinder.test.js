@@ -12,13 +12,22 @@ import Doctor from "../models/Doctor.js";
 
 dotenv.config();
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/appointer";
+const baseMongoUri = process.env.APPOINTER_TEST_MONGODB_URI || process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/appointer_ai_test";
+const testMongoUri = new URL(baseMongoUri);
+const baseDatabase = decodeURIComponent(testMongoUri.pathname.replace(/^\//, "")) || "appointer_ai_test";
+testMongoUri.pathname = `/${baseDatabase}_ai_finder_${process.pid}_${Date.now()}`;
+const MONGODB_URI = testMongoUri.toString();
 
 describe("AI Doctor Finder - Core Functionality & Safety Tests", () => {
   before(async () => {
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(MONGODB_URI);
     }
+    await Doctor.create([
+      { user: new mongoose.Types.ObjectId(), name: "Dr. Ananya Sharma", specialty: "Dermatologist", location: "Indiranagar, Bengaluru", availableSlots: ["Tomorrow · 10:00 AM"] },
+      { user: new mongoose.Types.ObjectId(), name: "Dr. Rohan Mehta", specialty: "Dentist", location: "Koramangala, Bengaluru", availableSlots: ["Tomorrow · 11:00 AM"] },
+      { user: new mongoose.Types.ObjectId(), name: "Dr. Arjun Rao", specialty: "Cardiologist", location: "Jayanagar, Bengaluru", availableSlots: ["Tomorrow · 12:00 PM"] },
+    ]);
   });
 
   after(async () => {

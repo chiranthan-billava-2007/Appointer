@@ -18,6 +18,35 @@ const doctorSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    timezone: {
+      type: String,
+      trim: true,
+      validate: {
+        validator: (value) => {
+          try {
+            new Intl.DateTimeFormat("en-US", { timeZone: value });
+            return true;
+          } catch {
+            return false;
+          }
+        },
+        message: "Timezone must be a valid IANA timezone.",
+      },
+    },
+    weeklyAvailability: {
+      type: [
+        new mongoose.Schema(
+          {
+            dayOfWeek: { type: Number, required: true, min: 0, max: 6, validate: Number.isInteger },
+            startTime: { type: String, required: true, match: /^(?:[01]\d|2[0-3]):[0-5]\d$/ },
+            endTime: { type: String, required: true, match: /^(?:[01]\d|2[0-3]):[0-5]\d$/ },
+            slotDurationMinutes: { type: Number, default: 30, min: 5, max: 480, validate: Number.isInteger },
+          },
+          { _id: false }
+        ),
+      ],
+      default: [],
+    },
     experienceYears: {
       type: Number,
       default: 5,

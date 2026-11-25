@@ -1,7 +1,9 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import { logAuthTiming, setAuthServerTiming, timerElapsedMs, timerStart } from "../utils/authTiming.js";
 
 export const protect = async (req, res, next) => {
+  const totalStart = timerStart();
   const jwtSecret = process.env.JWT_SECRET;
   if (!jwtSecret || jwtSecret.length < 32 || jwtSecret.includes("change_in_production")) {
     console.error("[AuthMiddleware] FATAL: JWT_SECRET is missing, insecure, or using a placeholder.");
@@ -20,11 +22,16 @@ export const protect = async (req, res, next) => {
       }
 
       // Verify cryptographic signature and expiration
+      const verifyStart = timerStart();
       const decoded = jwt.verify(token, jwtSecret);
+      const verifyMs = timerElapsedMs(verifyStart);
 
       // Verify user existence and active status in MongoDB
+      const lookupStart = timerStart();
       const user = await User.findById(decoded.id).select("-password");
+      const lookupMs = timerElapsedMs(lookupStart);
       if (!user) {
+        setAuthServerTiming(res, { verify: verifyMs, lookup: lookupMs, total: timerElapsedMs(totalStart) });
         return res.status(401).json({ message: "Not authorized, user account no longer exists" });
       }
 
@@ -36,8 +43,14 @@ export const protect = async (req, res, next) => {
         name: user.name,
       };
 
+      const totalMs = timerElapsedMs(totalStart);
+      setAuthServerTiming(res, { verify: verifyMs, lookup: lookupMs, total: totalMs });
+      logAuthTiming("protect", { status: 200, role: user.role, verifyMs, lookupMs, totalMs });
       return next();
     } catch {
+      const totalMs = timerElapsedMs(totalStart);
+      setAuthServerTiming(res, { total: totalMs });
+      logAuthTiming("protect", { status: 401, totalMs });
       return res.status(401).json({ message: "Not authorized, token failed or expired" });
     }
   }
