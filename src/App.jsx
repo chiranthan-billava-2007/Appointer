@@ -10,6 +10,9 @@ import Login from "./pages/Login";
 import DoctorLogin from "./pages/DoctorLogin";
 import AdminLogin from "./pages/AdminLogin";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import VerifyResetOtp from "./pages/VerifyResetOtp";
+import ResetPassword from "./pages/ResetPassword";
 import PatientDashboard from "./pages/PatientDashboard";
 import MyAppointments from "./pages/MyAppointments";
 import DoctorDashboard from "./pages/DoctorDashboard";
@@ -37,6 +40,9 @@ function App() {
           <Route path="/doctor/login" element={<DoctorLogin />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/verify-reset-otp" element={<VerifyResetOtp />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Role-Protected Patient Dashboard Routes */}
           <Route

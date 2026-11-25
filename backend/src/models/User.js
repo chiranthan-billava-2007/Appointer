@@ -29,6 +29,13 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    // Password-recovery data is deliberately excluded from normal queries.
+    // Only a hash of the emailed OTP and reset token is persisted.
+    resetOtpHash: { type: String, select: false },
+    resetOtpExpiresAt: { type: Date, select: false },
+    resetOtpAttempts: { type: Number, default: 0, select: false },
+    resetTokenHash: { type: String, select: false },
+    resetTokenExpiresAt: { type: Date, select: false },
   },
   { timestamps: true }
 );

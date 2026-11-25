@@ -52,6 +52,16 @@ npm run preview   # Preview the production build locally
 npm run lint      # Check the project with ESLint
 ```
 
+## Password recovery demonstration mode
+
+The password-recovery flow works for patient, doctor, and administrator accounts. This college-project build does not require SMTP or external email services. Add the following to `backend/.env` for local use:
+
+```env
+DEMO_OTP_ENABLED=true
+```
+
+With `NODE_ENV` unset, `development`, or `test`, the verification page will state that local demonstration mode is active; enter `123456` after requesting a reset. The API returns only a non-sensitive demo-mode flag, never the code itself. The code is still stored only as a bcrypt hash, expires after five minutes, is limited to five verification attempts, and is consumed after verification. The application refuses to start when `NODE_ENV=production` and `DEMO_OTP_ENABLED=true`; production also never creates a usable demo code.
+
 ## Main routes
 
 | Route | Purpose |
@@ -61,6 +71,9 @@ npm run lint      # Check the project with ESLint
 | `/doctors/:id` | Doctor profile |
 | `/login` | Patient login interface |
 | `/register` | Patient registration interface |
+| `/forgot-password` | Request a password-reset verification code |
+| `/verify-reset-otp` | Verify the emailed six-digit code |
+| `/reset-password` | Set a new password after verification |
 | `/patient/dashboard` | Patient overview |
 | `/patient/appointments` | Patient appointments |
 | `/doctor/dashboard` | Doctor schedule |

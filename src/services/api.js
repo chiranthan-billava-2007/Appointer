@@ -75,6 +75,33 @@ export const api = {
     return parseResponse(res, "Failed to authenticate session");
   },
 
+  forgotPassword: async (email) => {
+    const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    return parseResponse(res, "Unable to request a password reset");
+  },
+
+  verifyResetOtp: async (email, otp) => {
+    const res = await fetch(`${API_BASE}/auth/verify-reset-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, otp }),
+    });
+    return parseResponse(res, "Unable to verify the reset code");
+  },
+
+  resetPassword: async (email, resetToken, password) => {
+    const res = await fetch(`${API_BASE}/auth/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, resetToken, password }),
+    });
+    return parseResponse(res, "Unable to reset password");
+  },
+
   // Doctors
   getDoctors: async (search = "", specialty = "") => {
     const params = new URLSearchParams();

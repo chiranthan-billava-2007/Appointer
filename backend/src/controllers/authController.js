@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import Doctor from "../models/Doctor.js";
@@ -15,6 +16,126 @@ const generateToken = (id, role, name, email) => {
     jwtSecret,
     { expiresIn: "7d" }
   );
+};
+
+const RESET_OTP_TTL_MS = 5 * 60 * 1000;
+const RESET_TOKEN_TTL_MS = 10 * 60 * 1000;
+const MAX_RESET_OTP_ATTEMPTS = 5;
+const RECOVERY_MESSAGE = "If an account exists for that email, a password reset code has been sent.";
+const DEMO_OTP = "123456";
+
+const demoOtpEnabled = () => process.env.NODE_ENV !== "production" && process.env.DEMO_OTP_ENABLED === "true";
+
+const clearPasswordReset = (user) => {
+  user.resetOtpHash = undefined;
+  user.resetOtpExpiresAt = undefined;
+  user.resetOtpAttempts = 0;
+  user.resetTokenHash = undefined;
+  user.resetTokenExpiresAt = undefined;
+};
+
+const hashResetToken = (token) => crypto.createHash("sha256").update(token).digest("hex");
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    if (!email) return res.status(400).json({ message: "Email is required" });
+    // This non-sensitive mode flag lets the local UI explain where the code comes
+    // from without returning the OTP or revealing whether the account exists.
+    const recoveryResponse = demoOtpEnabled()
+      ? { message: RECOVERY_MESSAGE, demoMode: true }
+      : { message: RECOVERY_MESSAGE };
+
+    const user = await User.findOne({ email }).select("+resetOtpHash +resetOtpExpiresAt +resetOtpAttempts +resetTokenHash +resetTokenExpiresAt");
+    if (!user) return res.json(recoveryResponse);
+
+    // Demo OTP mode is intentionally unavailable in production. With no configured
+    // delivery mechanism, do not leave a code that a user cannot receive.
+    if (!demoOtpEnabled()) {
+      clearPasswordReset(user);
+      await user.save();
+      return res.json(recoveryResponse);
+    }
+
+    const otp = DEMO_OTP;
+    user.resetOtpHash = await bcrypt.hash(otp, 10);
+    user.resetOtpExpiresAt = new Date(Date.now() + RESET_OTP_TTL_MS);
+    user.resetOtpAttempts = 0;
+    user.resetTokenHash = undefined;
+    user.resetTokenExpiresAt = undefined;
+    await user.save();
+
+    return res.json(recoveryResponse);
+  } catch {
+    return res.status(500).json({ message: "Unable to process password reset request" });
+  }
+};
+
+export const verifyResetOtp = async (req, res) => {
+  try {
+    const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    const otp = typeof req.body.otp === "string" ? req.body.otp.trim() : "";
+    if (!email || !/^\d{6}$/.test(otp)) return res.status(400).json({ message: "Enter a valid six-digit code" });
+
+    const user = await User.findOne({ email }).select("+resetOtpHash +resetOtpExpiresAt +resetOtpAttempts +resetTokenHash +resetTokenExpiresAt");
+    const now = new Date();
+    if (!user || !user.resetOtpHash || !user.resetOtpExpiresAt || user.resetOtpExpiresAt <= now) {
+      if (user) { clearPasswordReset(user); await user.save(); }
+      return res.status(400).json({ message: "This reset code is invalid or has expired" });
+    }
+
+    if (user.resetOtpAttempts >= MAX_RESET_OTP_ATTEMPTS) {
+      clearPasswordReset(user);
+      await user.save();
+      return res.status(429).json({ message: "Too many code attempts. Request a new code." });
+    }
+
+    const valid = await bcrypt.compare(otp, user.resetOtpHash);
+    if (!valid) {
+      user.resetOtpAttempts += 1;
+      const locked = user.resetOtpAttempts >= MAX_RESET_OTP_ATTEMPTS;
+      if (locked) clearPasswordReset(user);
+      await user.save();
+      return res.status(locked ? 429 : 400).json({
+        message: locked ? "Too many code attempts. Request a new code." : "This reset code is invalid or has expired",
+      });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    user.resetTokenHash = hashResetToken(resetToken);
+    user.resetTokenExpiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS);
+    user.resetOtpHash = undefined;
+    user.resetOtpExpiresAt = undefined;
+    user.resetOtpAttempts = 0;
+    await user.save();
+    return res.json({ message: "Code verified", resetToken });
+  } catch {
+    return res.status(500).json({ message: "Unable to verify reset code" });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    const { resetToken, password } = req.body;
+    if (!email || typeof resetToken !== "string" || !resetToken || typeof password !== "string" || password.length < 8) {
+      return res.status(400).json({ message: "Email, reset token, and a password of at least 8 characters are required" });
+    }
+
+    const user = await User.findOne({ email }).select("+password +resetOtpHash +resetOtpExpiresAt +resetOtpAttempts +resetTokenHash +resetTokenExpiresAt");
+    const suppliedTokenHash = hashResetToken(resetToken);
+    const validToken = user && user.resetTokenHash && user.resetTokenExpiresAt > new Date()
+      && user.resetTokenHash.length === suppliedTokenHash.length
+      && crypto.timingSafeEqual(Buffer.from(user.resetTokenHash, "hex"), Buffer.from(suppliedTokenHash, "hex"));
+    if (!validToken) return res.status(400).json({ message: "This password reset link is invalid or has expired" });
+
+    user.password = await bcrypt.hash(password, 10);
+    clearPasswordReset(user);
+    await user.save();
+    return res.json({ message: "Password reset successful. You can now log in." });
+  } catch {
+    return res.status(500).json({ message: "Unable to reset password" });
+  }
 };
 
 export const registerUser = async (req, res) => {

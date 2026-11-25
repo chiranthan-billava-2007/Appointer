@@ -17,6 +17,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 dotenv.config();
 
+// Demo OTPs must never be allowed in a deployed production environment.
+if (process.env.NODE_ENV === "production" && process.env.DEMO_OTP_ENABLED === "true") {
+  console.error("FATAL: DEMO_OTP_ENABLED cannot be enabled in production.");
+  process.exit(1);
+}
+
 // CRITICAL SECURITY ASSERTION: Validate JWT configuration at server launch
 const jwtSecret = process.env.JWT_SECRET;
 if (!jwtSecret || jwtSecret.length < 32 || jwtSecret.includes("change_in_production")) {

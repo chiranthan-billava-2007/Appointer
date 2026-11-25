@@ -76,6 +76,7 @@ function DoctorLogin() {
           <p className="auth-switch">
             Need doctor onboarding? Contact platform administration.
           </p>
+          <p className="auth-switch auth-switch-compact"><Link to="/forgot-password">Forgot your password?</Link></p>
 
           <div style={{ marginTop: "24px", paddingTop: "16px", borderTop: "1px solid #e2e8f0", fontSize: "0.85rem", color: "#64748b", textAlign: "center", display: "flex", justifyContent: "center", gap: "16px", flexWrap: "wrap" }}>
             <Link to="/login" style={{ color: "var(--primary, #0284c7)" }}>← Patient Portal</Link>
