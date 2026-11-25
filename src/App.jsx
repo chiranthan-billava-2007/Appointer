@@ -13,6 +13,7 @@ import Register from "./pages/Register";
 import PatientDashboard from "./pages/PatientDashboard";
 import MyAppointments from "./pages/MyAppointments";
 import DoctorDashboard from "./pages/DoctorDashboard";
+import DoctorAvailability from "./pages/DoctorAvailability";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
 import AdminReports from "./pages/AdminReports";
@@ -61,6 +62,14 @@ function App() {
             element={
               <RoleProtectedRoute allowedRoles={["doctor"]}>
                 <DoctorDashboard />
+              </RoleProtectedRoute>
+            }
+          />
+          <Route
+            path="/doctor/availability"
+            element={
+              <RoleProtectedRoute allowedRoles={["doctor"]}>
+                <DoctorAvailability />
               </RoleProtectedRoute>
             }
           />

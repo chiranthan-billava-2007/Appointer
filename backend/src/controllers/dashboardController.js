@@ -46,6 +46,7 @@ export const getDashboardSummary = async (req, res) => {
       return res.json({
         role: "doctor",
         timezone,
+        weeklyAvailability: doctor.weeklyAvailability || [],
         stats: { ...statusCounts(appointments), today: todayAppointments.length },
         todayAppointments,
         appointments,

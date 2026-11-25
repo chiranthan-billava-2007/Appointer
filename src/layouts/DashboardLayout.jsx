@@ -16,7 +16,7 @@ function DashboardLayout({ role, children }) {
       ? [
           ["/doctor/dashboard", "Overview"],
           ["/doctor/dashboard", "Appointments"],
-          ["/doctor/dashboard", "Availability"],
+          ["/doctor/availability", "Availability"],
         ]
       : [
           ["/admin/dashboard", "Overview"],

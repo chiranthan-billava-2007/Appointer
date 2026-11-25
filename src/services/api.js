@@ -175,6 +175,15 @@ export const api = {
     return parseResponse(res, "Failed to fetch doctor availability");
   },
 
+  updateMyAvailability: async (availability) => {
+    const res = await fetch(`${API_BASE}/doctors/me/availability`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(availability),
+    });
+    return parseResponse(res, "Failed to update availability");
+  },
+
   // AI Appointment Assistant
   assistantChat: async (message, history = []) => {
     let res = await fetch(`${API_BASE}/assistant/chat`, {
