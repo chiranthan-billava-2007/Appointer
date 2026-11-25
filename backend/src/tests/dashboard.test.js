@@ -78,5 +78,7 @@ describe("Dashboard summaries", () => {
     assert.equal(res.body.stats.doctors, 1);
     assert.equal(res.body.stats.totalAppointments, 3);
     assert.equal(res.body.recentAppointments.length, 3);
+    assert.equal(res.body.users.length, 5);
+    assert.ok(res.body.users.every((user) => !Object.hasOwn(user, "password")));
   });
 });

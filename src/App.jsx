@@ -14,6 +14,8 @@ import PatientDashboard from "./pages/PatientDashboard";
 import MyAppointments from "./pages/MyAppointments";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminUsers from "./pages/AdminUsers";
+import AdminReports from "./pages/AdminReports";
 import AIDoctorFinder from "./pages/AIDoctorFinder";
 import AIAssistant from "./pages/AIAssistant";
 
@@ -69,6 +71,22 @@ function App() {
             element={
               <RoleProtectedRoute allowedRoles={["admin"]}>
                 <AdminDashboard />
+              </RoleProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <RoleProtectedRoute allowedRoles={["admin"]}>
+                <AdminUsers />
+              </RoleProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/reports"
+            element={
+              <RoleProtectedRoute allowedRoles={["admin"]}>
+                <AdminReports />
               </RoleProtectedRoute>
             }
           />

@@ -12,16 +12,22 @@ const statusCounts = (appointments) => appointments.reduce(
 export const getDashboardSummary = async (req, res) => {
   try {
     if (req.user.role === "admin") {
-      const [patients, doctors, appointments, recentAppointments] = await Promise.all([
+      const [patients, doctors, appointments, recentAppointments, users] = await Promise.all([
         User.countDocuments({ role: "patient" }),
         Doctor.countDocuments({}),
         Appointment.find({}).sort({ updatedAt: -1 }).select("status").lean(),
         Appointment.find({}).sort({ updatedAt: -1 }).limit(20).lean(),
+        User.find({ role: { $in: ["patient", "doctor", "admin"] } })
+          .select("name email role createdAt")
+          .sort({ createdAt: -1 })
+          .limit(100)
+          .lean(),
       ]);
       return res.json({
         role: "admin",
         stats: { patients, doctors, totalAppointments: appointments.length, ...statusCounts(appointments) },
         recentAppointments,
+        users,
       });
     }
 

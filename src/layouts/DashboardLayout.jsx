@@ -1,9 +1,8 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import logoMark from "../assets/logo-mark.png";
 import { useAuth } from "../context/useAuth";
 
 function DashboardLayout({ role, children }) {
-  const location = useLocation();
   const { user, logout } = useAuth();
 
   const links =
@@ -21,8 +20,8 @@ function DashboardLayout({ role, children }) {
         ]
       : [
           ["/admin/dashboard", "Overview"],
-          ["/admin/dashboard", "Users"],
-          ["/admin/dashboard", "Reports"],
+          ["/admin/users", "Users"],
+          ["/admin/reports", "Reports"],
         ];
 
   return (
@@ -40,13 +39,13 @@ function DashboardLayout({ role, children }) {
         <p className="sidebar-label">{role} portal</p>
         <nav className="dashboard-nav-container">
           {links.map(([to, label]) => (
-            <Link
-              className={`dashboard-nav-link ${location.pathname === to ? "active" : ""}`}
+            <NavLink
+              className={({ isActive }) => `dashboard-nav-link ${isActive ? "active" : ""}`}
               to={to}
               key={label}
             >
               {label}
-            </Link>
+            </NavLink>
           ))}
           <Link to="/" className="sidebar-home-mobile">← Home</Link>
         </nav>
