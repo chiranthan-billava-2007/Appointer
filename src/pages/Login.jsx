@@ -23,7 +23,7 @@ function Login() {
     try {
       await login({ email, password }, "patient");
       const destination = location.state?.from?.pathname || "/patient/dashboard";
-      navigate(destination, { replace: true });
+      navigate(destination, { replace: true, state: location.state?.from?.state });
       requestAnimationFrame(() => logAuthTiming("login_to_dashboard", navigationStart, { role: "patient" }));
     } catch (err) {
       setError(err.message || "Failed to log in");

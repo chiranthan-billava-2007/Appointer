@@ -25,6 +25,7 @@ function FindDoctors() {
   const [specialty, setSpecialty] = useState(urlSpecialty);
   const [doctorsList, setDoctorsList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -32,11 +33,15 @@ function FindDoctors() {
     api.getDoctors(query, specialty)
       .then((data) => {
         if (isMounted && Array.isArray(data)) {
+          setError("");
           setDoctorsList(data);
         }
       })
       .catch((err) => {
-        console.error("Failed to fetch doctors:", err);
+        if (isMounted) {
+          setDoctorsList([]);
+          setError(err.message || "Could not load doctors. Please try again.");
+        }
       })
       .finally(() => {
         if (isMounted) setLoading(false);
@@ -86,7 +91,9 @@ function FindDoctors() {
           <span>{loading ? "Searching..." : `${doctorsList.length} doctors available`}</span>
         </div>
 
-        {doctorsList.length ? (
+        {error && <p className="dashboard-error" role="alert">{error}</p>}
+
+        {!error && doctorsList.length ? (
           <div className="doctor-list-grid">
             {doctorsList.map((doc, index) => {
               const initials = doc.name
